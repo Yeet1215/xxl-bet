@@ -149,4 +149,4 @@ bug-driven rules to this list as they're earned.
 ---
 
 **Version:** 2026-Q3
-**Last Updated:** 2026-09-01 (Chunk 2 complete: bet types (time/number/yesno) — migrations `0001`/`0002` generalize value columns to integers; boards create/join/settings + dashboard; Field moved to `components/ui/`; ButtonLink added. "Bet values as integers" standard updated. — Chunk 1: migration `0000`, session auth, tz helper, UI primitives, route groups. — Chunk 0: scaffold + doc set.)
+**Last Updated:** 2026-09-01 (Chunk 3 complete: rounds & betting — lazy round creation, `placeBet` (server-side betType, derived board-tz lock, upsert-until-lock), `<TodayRound>` hidden-until-lock reveal, `lib/utils/format.ts`. No migration. — Chunk 2: bet types + boards CRUD, migrations `0001`/`0002`. — Chunk 1: migration `0000`, session auth, tz helper, UI primitives. — Chunk 0: scaffold + doc set.)

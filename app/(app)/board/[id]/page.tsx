@@ -2,11 +2,13 @@ import { notFound, redirect } from 'next/navigation'
 
 import { getCurrentUser } from '@/lib/auth/session'
 import { getBoardForUser, getBoardMembers } from '@/lib/queries/boards'
-import { formatMinutes } from '@/lib/utils/tz'
+import { getRoundWithBets } from '@/lib/queries/rounds'
+import { formatMinutes, nowMinutesInTz, todayInTz } from '@/lib/utils/tz'
 import { BET_TYPE_META } from '@/lib/constants/bet-types'
 import { Stamp } from '@/components/ui/stamp'
 import { ButtonLink } from '@/components/ui/button-link'
 import { InviteCode } from '@/components/boards/invite-code'
+import { TodayRound } from '@/components/boards/today-round'
 
 export default async function BoardPage({ params }: PageProps<'/board/[id]'>) {
   const user = await getCurrentUser()
@@ -20,6 +22,11 @@ export default async function BoardPage({ params }: PageProps<'/board/[id]'>) {
   const isOwner = membership.role === 'owner'
 
   const members = await getBoardMembers(board.id)
+
+  // Lock state is derived in the board's timezone — never stored (BUILD-BRIEF).
+  const roundDate = todayInTz(board.timezone)
+  const locked = nowMinutesInTz(board.timezone) >= board.lockTimeMinutes
+  const { bets: betRows } = await getRoundWithBets(board.id, roundDate)
 
   return (
     <div className="flex flex-col gap-6">
@@ -45,12 +52,13 @@ export default async function BoardPage({ params }: PageProps<'/board/[id]'>) {
         )}
       </div>
 
-      <section className="rounded-[12px] border border-dashed border-border bg-surface-1 p-6 text-center flex flex-col items-center gap-1">
-        <p className="font-semibold">Today&apos;s round lands here next.</p>
-        <p className="text-sm text-text-secondary">
-          Placing bets arrives in the next chunk — invite the others in the meantime.
-        </p>
-      </section>
+      <TodayRound
+        board={board}
+        roundDate={roundDate}
+        locked={locked}
+        betRows={betRows}
+        viewerId={user.id}
+      />
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-bold uppercase tracking-[0.06em] text-text-muted">

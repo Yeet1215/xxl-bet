@@ -15,9 +15,10 @@
 
 - **2 — Boards + bet types (2026-09-01).** Owner request: boards support bet TYPES. Migrations `0001`+`0002` (two-step add-then-drop — drizzle-kit rename prompts need a TTY): `boards.betType` (`time`/`number`/`yesno`, fixed at creation) + `unitLabel` (number boards), generic integer value columns (`bets.betValue`, `rounds.outcomeValue`, `decide_requests.proposedOutcomeValue`, `boards.windowSize`) replace the time-specific smallints; verified applied, users/sessions untouched. Features: `createBoard` (type picker, conditional unit/scoring fields, 8-char invite code A–Z/2–9 minus lookalikes, collision retry, owner auto-membership), `joinBoard` (idempotent, uppercased code), `updateBoardSettings` (owner-check in WHERE; betType immutable), dashboard board list + join form, `/boards/new`, `/board/[id]` (members list, copyable invite code, today-round placeholder, members-only via notFound), `/board/[id]/settings`. `Field`→`components/ui/`, new `ButtonLink`, `lib/constants/bet-types.ts`. Scoring per type spec'd in BUILD-BRIEF (time+number share closeness; yesno right-or-wrong).
 
+- **3 — Rounds & betting (2026-09-01).** No migration. `placeBet` action: Zod boardId → membership check → lock check (derived, board-tz via `nowMinutesInTz`) → value parsed by the BOARD's betType (client never picks the type) → lazy round creation (`onConflictDoNothing` on the (boardId, roundDate) unique index — concurrent first-bets safe) → bet upsert on (roundId, userId); guards decided rounds already (chunk-4 early-decide-proof). `<TodayRound>` card on the board page: OPEN (typed `<BetForm>`: time picker / number+unit / yes-no state-driven buttons + hidden input; who-has-bet list with values hidden as ••• except your own) ↔ LOCKED (full reveal, sorted by value). `lib/utils/format.ts` (`formatBetValue` type-aware, `formatRoundDate` UTC-pure). Copy voice per DESIGN ("No bets yet. Scared?").
+
 ## Planned
 
-- **3 — Rounds & betting.** Lazy round creation, place/edit bet (typed input per betType: time picker / number+unit / yes-no buttons; hidden until lock, who-has-bet indicator), lock derivation + reveal, today-round view on board page.
 - **4 — Deciding & scoring.** `lib/scoring.ts` pure function + unit tests (vitest — first test infra); type-aware (closeness for time/number, right-or-wrong for yesno); owner "Decide bet" (outcome input); member "Request to decide" + owner approve/deny queue; score computation + stored resolve artifacts; decided-round results view (diffs, closest, exact, confetti-on-exact).
 - **5 — Leaderboard & profile.** Board leaderboard (points, wins, exacts), profile stats (avg diff, streaks) + bet history.
 - **6 — Polish pass.** Empty states, copy/voice pass, mobile ergonomics, seed the founding board, invite the colleagues. 🎉
@@ -41,4 +42,4 @@
 
 ---
 
-**Last Updated:** 2026-09-01 (Chunks 0–2 shipped: scaffold, foundations, boards + bet types (migrations 0001/0002, create/join/settings, dashboard). Chunks 3–6 planned.)
+**Last Updated:** 2026-09-01 (Chunks 0–3 shipped: scaffold, foundations, boards + bet types, rounds & betting (lazy rounds, typed bet inputs, hidden-until-lock reveal). Chunks 4–6 planned.)
