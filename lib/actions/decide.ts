@@ -111,7 +111,7 @@ export async function decideRound(
   )
 
   // Best-effort, after commit; awaited (serverless drops detached promises).
-  await sendRoundDecidedEmails(board, roundDate, user.id)
+  await sendRoundDecidedEmails(board, roundDate)
 
   revalidatePath(`/board/${boardId}`)
   return { ok: true }
@@ -235,7 +235,7 @@ async function reviewDecideRequest(
       return true
     })
     if (!applied) return { error: 'This round was already decided' }
-    await sendRoundDecidedEmails(row.board, row.round.roundDate, user.id)
+    await sendRoundDecidedEmails(row.board, row.round.roundDate)
   } else {
     await db
       .update(decideRequests)

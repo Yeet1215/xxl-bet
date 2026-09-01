@@ -1,5 +1,5 @@
 import 'server-only'
-import { and, eq, isNotNull, ne } from 'drizzle-orm'
+import { and, eq, isNotNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { boardMembers, users, type Board } from '@/lib/db/schema'
@@ -9,16 +9,13 @@ import { roundDecidedEmailHtml } from '@/lib/email/templates/round-decided'
 import { formatBetValue, formatRoundDate } from '@/lib/utils/format'
 
 /**
- * Best-effort decided-round notification: ONE email, opted-in members in BCC
- * (single SMTP call, addresses private), decider excluded. Never throws —
- * a mail hiccup must not break deciding. Await it (serverless drops detached
- * promises) AFTER the decide transaction commits.
+ * Best-effort decided-round notification: ONE email, ALL opted-in members in
+ * BCC (single SMTP call, addresses private) — decider included, so the mail
+ * doubles as the day's record in everyone's inbox (owner request, was
+ * excluded originally). Never throws — a mail hiccup must not break deciding.
+ * Await it (serverless drops detached promises) AFTER the transaction commits.
  */
-export async function sendRoundDecidedEmails(
-  board: Board,
-  roundDate: string,
-  deciderId: string,
-): Promise<void> {
+export async function sendRoundDecidedEmails(board: Board, roundDate: string): Promise<void> {
   try {
     const recipients = await db
       .select({ email: users.email })
@@ -29,7 +26,6 @@ export async function sendRoundDecidedEmails(
           eq(boardMembers.boardId, board.id),
           eq(users.notifyOnDecide, true),
           isNotNull(users.email),
-          ne(users.id, deciderId),
         ),
       )
     const bcc = recipients.map((r) => r.email as string)
