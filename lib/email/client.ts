@@ -1,28 +1,28 @@
 import 'server-only'
-import type { ReactElement } from 'react'
 
-// Ported from fitapp (incl. its post-25 fix): `skipped` = email disabled
-// (no RESEND_API_KEY), nothing was sent. Callers that need delivery
-// semantics must treat it as "not sent"; fire-and-forget callers may ignore.
+// Gmail SMTP via nodemailer (owner has no domain yet — Resend requires a
+// verified one; Gmail sends real mail for free at office volume, ~500/day cap).
+// Gmail rewrites the From ADDRESS to the authenticated account; only the
+// display name ("XXL Bet") survives. If a domain ever lands, swapping back to
+// an API sender means touching only this file — the interface stays.
+//
+// `skipped` = email disabled (env unset), nothing was sent. Callers that need
+// delivery semantics must treat it as "not sent".
 type EmailResult = { error?: string; skipped?: true }
 
-// MUST be a Resend-verified sender in prod; the sandbox fallback only
-// delivers to the Resend account owner (so misconfig isn't silent).
-const FROM = process.env.EMAIL_FROM ?? 'XXL Bet <onboarding@resend.dev>'
-
 export function isEmailEnabled(): boolean {
-  return !!process.env.RESEND_API_KEY
+  return !!process.env.GMAIL_USER && !!process.env.GMAIL_APP_PASSWORD
 }
 
 export async function sendEmail(
   to: string,
   subject: string,
-  react: ReactElement,
+  html: string,
 ): Promise<EmailResult> {
   if (!isEmailEnabled()) {
     console.warn(
       `[email dev] To: ${to} | Subject: ${subject}\n` +
-        `Set RESEND_API_KEY to send real emails.`,
+        `Set GMAIL_USER + GMAIL_APP_PASSWORD to send real emails.`,
     )
     return { skipped: true }
   }
@@ -30,12 +30,21 @@ export async function sendEmail(
   // Never throw: callers (registration, reset) must not fail because email
   // delivery hiccuped. Always resolve to { error? }.
   try {
-    const { Resend } = await import('resend')
-    const resend = new Resend(process.env.RESEND_API_KEY!)
+    const { createTransport } = await import('nodemailer')
+    const transport = createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER!,
+        pass: process.env.GMAIL_APP_PASSWORD!,
+      },
+    })
 
-    const { error } = await resend.emails.send({ from: FROM, to: [to], subject, react })
-
-    if (error) return { error: error.message }
+    await transport.sendMail({
+      from: `XXL Bet <${process.env.GMAIL_USER}>`,
+      to,
+      subject,
+      html,
+    })
     return {}
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)

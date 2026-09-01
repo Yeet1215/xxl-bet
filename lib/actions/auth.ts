@@ -1,6 +1,5 @@
 'use server'
 
-import { createElement } from 'react'
 import { randomBytes, createHash } from 'crypto'
 import { redirect } from 'next/navigation'
 import { and, eq, gt, isNull, sql } from 'drizzle-orm'
@@ -20,7 +19,7 @@ import {
   resetPasswordSchema,
 } from '@/lib/validators/auth'
 import { sendEmail } from '@/lib/email/client'
-import { ResetPasswordEmail } from '@/lib/email/templates/reset-password'
+import { resetPasswordEmailHtml } from '@/lib/email/templates/reset-password'
 
 export type AuthActionState = { error: string } | undefined
 export type RequestResetState = { error: string } | { success: true } | undefined
@@ -154,7 +153,7 @@ export async function requestPasswordReset(
     const { error, skipped } = await sendEmail(
       user.email,
       'Reset your XXL Bet password',
-      createElement(ResetPasswordEmail, { username: user.username, resetLink }),
+      resetPasswordEmailHtml({ username: user.username, resetLink }),
     )
     if (error) console.error('[requestPasswordReset] send failed:', error)
     // Dev fallback (no RESEND_API_KEY): surface the link in the server console
