@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { and, eq, ne } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { bets, boards, decideRequests, rounds, type Board } from '@/lib/db/schema'
@@ -15,23 +15,36 @@ import { scoreRound } from '@/lib/scoring'
 
 export type DecideActionState = { error: string } | { ok: true } | undefined
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
 /**
- * Core resolve: set the round's outcome, recompute every bet's score (the
- * engine is pure + idempotent, so re-deciding just overwrites), and auto-deny
- * any still-pending decide requests (moot once decided).
+ * Core resolve, transaction-scoped (security review: a crash mid-scoring must
+ * not leave a "decided" round with unscored bets): claim the round, recompute
+ * every bet's score (the engine is pure + idempotent, so re-deciding just
+ * overwrites), and auto-deny still-pending decide requests (moot once
+ * decided). With `onlyIfUndecided` the claim is conditional — the loser of a
+ * concurrent double-approve gets `false` instead of double-applying.
  */
-async function applyOutcome(
+async function applyOutcomeCore(
+  tx: Tx,
   board: Board,
   roundId: string,
   outcome: number,
   decidedById: string,
-): Promise<void> {
-  await db
+  onlyIfUndecided: boolean,
+): Promise<boolean> {
+  const claimed = await tx
     .update(rounds)
     .set({ outcomeValue: outcome, decidedAt: new Date(), decidedById })
-    .where(eq(rounds.id, roundId))
+    .where(
+      onlyIfUndecided
+        ? and(eq(rounds.id, roundId), isNull(rounds.outcomeValue))
+        : eq(rounds.id, roundId),
+    )
+    .returning({ id: rounds.id })
+  if (claimed.length === 0) return false
 
-  const betRows = await db
+  const betRows = await tx
     .select({ userId: bets.userId, betValue: bets.betValue })
     .from(bets)
     .where(eq(bets.roundId, roundId))
@@ -40,7 +53,7 @@ async function applyOutcome(
   // Per-row updates — fine at office scale (≤ ~20 bets/round); batch to a
   // single CASE update if boards ever grow beyond that.
   for (const result of scored) {
-    await db
+    await tx
       .update(bets)
       .set({
         score: result.score,
@@ -51,10 +64,12 @@ async function applyOutcome(
       .where(and(eq(bets.roundId, roundId), eq(bets.userId, result.userId)))
   }
 
-  await db
+  await tx
     .update(decideRequests)
     .set({ status: 'denied', reviewedAt: new Date(), reviewedById: decidedById })
     .where(and(eq(decideRequests.roundId, roundId), eq(decideRequests.status, 'pending')))
+
+  return true
 }
 
 // Owner decides (or RE-decides — fixing a wrong outcome recomputes scores).
@@ -89,7 +104,10 @@ export async function decideRound(
   const round = await ensureRound(boardId, roundDate)
   if (!round) return { error: 'Could not open the round' }
 
-  await applyOutcome(board, round.id, parsedValue.value, user.id)
+  // Owner decide/re-decide is unconditional (single trusted human).
+  await db.transaction((tx) =>
+    applyOutcomeCore(tx, board, round.id, parsedValue.value, user.id, false),
+  )
 
   revalidatePath(`/board/${boardId}`)
   return { ok: true }
@@ -147,11 +165,18 @@ export async function submitDecideRequest(
       .set({ proposedOutcomeValue: parsedValue.value, createdAt: new Date() })
       .where(eq(decideRequests.id, existing.id))
   } else {
-    await db.insert(decideRequests).values({
-      roundId: round.id,
-      requesterId: user.id,
-      proposedOutcomeValue: parsedValue.value,
-    })
+    try {
+      await db.insert(decideRequests).values({
+        roundId: round.id,
+        requesterId: user.id,
+        proposedOutcomeValue: parsedValue.value,
+      })
+    } catch (err) {
+      // Concurrent double-submit trips the one-pending partial unique index —
+      // a pending request now exists, which is what the user wanted.
+      const message = err instanceof Error ? err.message : String(err)
+      if (!message.includes('decide_requests_pending_idx')) throw err
+    }
   }
 
   revalidatePath(`/board/${boardId}`)
@@ -185,18 +210,32 @@ async function reviewDecideRequest(
   if (row.round.outcomeValue !== null) return { error: 'This round is already decided' }
 
   if (verdict === 'approved') {
-    await db
-      .update(decideRequests)
-      .set({ status: 'approved', reviewedAt: new Date(), reviewedById: user.id })
-      .where(eq(decideRequests.id, row.request.id))
-    // applyOutcome auto-denies the REMAINING pending requests (this one is
-    // already approved, so the ne() isn't strictly needed — kept for clarity).
-    await applyOutcome(row.board, row.round.id, row.request.proposedOutcomeValue, user.id)
+    // One transaction: claim-first (onlyIfUndecided) so two concurrent
+    // approvals can't both apply — the loser reports instead of double-scoring.
+    const applied = await db.transaction(async (tx) => {
+      const ok = await applyOutcomeCore(
+        tx,
+        row.board,
+        row.round.id,
+        row.request.proposedOutcomeValue,
+        user.id,
+        true,
+      )
+      if (!ok) return false
+      // Flip THIS request to approved (applyOutcomeCore just auto-denied all
+      // pending ones for the round, including it).
+      await tx
+        .update(decideRequests)
+        .set({ status: 'approved', reviewedAt: new Date(), reviewedById: user.id })
+        .where(eq(decideRequests.id, row.request.id))
+      return true
+    })
+    if (!applied) return { error: 'This round was already decided' }
   } else {
     await db
       .update(decideRequests)
       .set({ status: 'denied', reviewedAt: new Date(), reviewedById: user.id })
-      .where(and(eq(decideRequests.id, row.request.id), ne(decideRequests.status, 'denied')))
+      .where(and(eq(decideRequests.id, row.request.id), eq(decideRequests.status, 'pending')))
   }
 
   revalidatePath(`/board/${row.board.id}`)

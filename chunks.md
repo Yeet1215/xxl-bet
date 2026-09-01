@@ -23,9 +23,11 @@
 
 - **6 — Polish pass (2026-09-01).** No migration. Exact-hit confetti (`<ExactConfetti>` — deterministic CSS pieces, fires only when a decided round contains an exact, once per (board, roundDate) per browser via sessionStorage, DESIGN's "one allowed piece of flash"). Branded `app/not-found.tsx` (bad ids / non-member boards) + `app/error.tsx` (special-cases expired-session UNAUTHENTICATED with a log-in path). `app/icon.svg` favicon (accent square, XB). Header truncates long display names. Empty states audited (already teaching); skeleton loading states deliberately skipped at office scale. **v1 roadmap complete — seed the founding board + invite the office.** 🎉
 
+- **7 — Accounts & review hardening (2026-09-01).** Migration `0003` (`users.email` nullable + lower-unique — required at registration, grandfathered accounts null; `password_reset_tokens`; `bets.diff_minutes` smallint→**integer**). **Email + reset:** Resend client ported from fitapp (incl. `skipped` semantics), light-theme reset template, `/forgot-password` (enumeration-safe) + `/reset-password/[token]` (sha256 one-use token, 1h TTL, kills ALL sessions), login "Forgot?" link + reset banner; env: `RESEND_API_KEY`/`EMAIL_FROM`/`APP_URL`. **"Next round in Xh Ym"** countdown on locked/decided rounds (betting-ahead deliberately deferred — owner still deciding). **Final-review fix pass** (2 agents: security + UX): diff overflow fix (one hostile number-bet could permanently wedge deciding), `applyOutcome` now transactional + claim-first on approve (no double-apply / half-decided rounds), owner can't extend lock past reveal (anti-peek), real-date validation, register/request race → friendly errors, login timing equalizer (dummy bcrypt), 00:00-lock guard, keyboard-operable radiogroups (arrows + roving tabindex), yesno no longer fires confetti/"Clairvoyant" (isExact stays false; label reads "Correct"), past undecided rounds now visible to ALL members with request forms + owner queues (requests no longer vanish at midnight), dashboard cards show live open/locked/decided + "Bet now →"/"✓ Bet placed", error page prod-safe (no redacted-message branching), Stamp `accent` tone + visible `neutral`, mono digits on counts, join-input aria-label, details chevron. Suite: 14 tests.
+
 ## Planned
 
-*(v1 complete — V2 roadmap being drafted in `.claude-notes/ROADMAP.md`)*
+*(v2 proposals in `.claude-notes/ROADMAP.md` — owner picks next)*
 
 ## Deferred (unscheduled backlog)
 
@@ -38,7 +40,7 @@
 
 ## Schema migrations
 
-`0000` base — users, sessions, boards, board_members, rounds, bets, decide_requests · `0001`+`0002` bet-type generalization — betType/unitLabel/windowSize + generic integer value columns, old time-specific columns dropped (two-step because drizzle-kit rename prompts require a TTY; all applied + verified 2026-09-01).
+`0000` base — users, sessions, boards, board_members, rounds, bets, decide_requests · `0001`+`0002` bet-type generalization — betType/unitLabel/windowSize + generic integer value columns, old time-specific columns dropped (two-step because drizzle-kit rename prompts require a TTY) · `0003` users.email + password_reset_tokens + bets.diff_minutes→integer (all applied + verified 2026-09-01).
 
 > **Migration gotcha:** `drizzle-kit migrate` against Neon can silently no-op —
 > always verify the table/column actually exists after migrating. Recipe in
@@ -46,4 +48,4 @@
 
 ---
 
-**Last Updated:** 2026-09-01 (Chunks 0–6 ALL SHIPPED — v1 complete: scaffold, foundations, boards + bet types, rounds & betting, deciding & scoring, leaderboard & profile, polish. V2 roadmap next.)
+**Last Updated:** 2026-09-01 (Chunks 0–7 shipped. 7 = accounts (email + password reset, migration 0003) + the full two-agent final-review fix pass. V2 proposals live in `.claude-notes/ROADMAP.md`.)

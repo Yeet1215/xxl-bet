@@ -30,6 +30,7 @@ export function JoinBoardForm() {
         minLength={4}
         maxLength={12}
         placeholder="Invite code"
+        aria-label="Invite code"
         autoComplete="off"
         autoCapitalize="characters"
         className="flex-1 min-w-0 min-h-[44px] px-3 rounded-[10px] bg-bg border border-border text-text-primary placeholder:text-text-muted text-sm font-mono uppercase tracking-widest transition-colors focus:outline-none focus:border-accent"

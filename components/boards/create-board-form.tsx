@@ -50,7 +50,25 @@ export function CreateBoardForm() {
 
       <div className="flex flex-col gap-1.5">
         <span className="text-[13px] font-semibold text-text-secondary">Bet type</span>
-        <div className="flex gap-1.5" role="radiogroup" aria-label="Bet type">
+        <div
+          className="flex gap-1.5"
+          role="radiogroup"
+          aria-label="Bet type"
+          onKeyDown={(e) => {
+            // Radio keyboard semantics: arrows move selection AND focus.
+            let delta = 0
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') delta = 1
+            else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') delta = -1
+            if (delta === 0) return
+            e.preventDefault()
+            const idx = BET_TYPES.indexOf(betType)
+            const nextIdx = (idx + delta + BET_TYPES.length) % BET_TYPES.length
+            setBetType(BET_TYPES[nextIdx])
+            e.currentTarget
+              .querySelectorAll<HTMLButtonElement>('[role="radio"]')
+              [nextIdx]?.focus()
+          }}
+        >
           {BET_TYPES.map((t) => (
             <button
               key={t}
@@ -93,7 +111,15 @@ export function CreateBoardForm() {
 
       <details className="group rounded-[10px] border border-border bg-bg">
         <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-text-secondary flex items-center justify-between">
-          Scoring settings
+          <span className="flex items-center gap-2">
+            <span
+              aria-hidden
+              className="text-text-muted text-xs transition-transform duration-150 group-open:rotate-90"
+            >
+              ▶
+            </span>
+            Scoring settings
+          </span>
           <span className="text-xs text-text-muted group-open:hidden">defaults are fine</span>
         </summary>
         <div className="flex flex-col gap-4 px-4 pb-4">

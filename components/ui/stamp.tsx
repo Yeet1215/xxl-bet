@@ -1,14 +1,18 @@
 import { type ReactNode } from 'react'
 
-type Tone = 'open' | 'locked' | 'decided' | 'neutral'
+type Tone = 'open' | 'locked' | 'decided' | 'neutral' | 'accent'
 
 // Status stamps (DESIGN.md): small uppercase soft-tinted pills. One component,
-// four tones — never ad-hoc pill markup elsewhere.
+// five tones — never ad-hoc pill markup elsewhere. `open/locked/decided` are
+// ROUND states only; `accent` is for non-state highlights (Owner, streaks);
+// `neutral` for labels (bet type). neutral is surface-2 so it stays visible
+// on surface-1 cards.
 const tones: Record<Tone, string> = {
   open: 'bg-accent-soft text-accent-deep',
   locked: 'bg-surface-2 text-text-secondary',
   decided: 'bg-success-soft text-success',
-  neutral: 'bg-surface-1 text-text-muted',
+  neutral: 'bg-surface-2 text-text-muted',
+  accent: 'bg-accent-soft text-accent-deep',
 }
 
 export function Stamp({ tone = 'neutral', children }: { tone?: Tone; children: ReactNode }) {

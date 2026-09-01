@@ -8,6 +8,7 @@ import { DecideForm } from '@/components/boards/decide-form'
 import { RequestDecideForm } from '@/components/boards/request-decide-form'
 import { DecideRequests } from '@/components/boards/decide-requests'
 import { ExactConfetti } from '@/components/boards/exact-confetti'
+import { NextRoundCountdown } from '@/components/boards/next-round-countdown'
 
 type PendingRequest = {
   id: string
@@ -124,7 +125,7 @@ export function TodayRound({
                   )}
                   {decided && bet.isClosest && !bet.isExact && (
                     <span className="ml-2 text-[10px] font-bold uppercase tracking-[0.08em] text-accent-deep">
-                      Closest
+                      {board.betType === 'yesno' ? 'Correct' : 'Closest'}
                     </span>
                   )}
                 </span>
@@ -153,6 +154,8 @@ export function TodayRound({
           })}
         </ul>
       )}
+
+      {(locked || decided) && <NextRoundCountdown timezone={board.timezone} />}
 
       {!decided && (
         <div className="flex flex-col gap-3 border-t border-border pt-3">

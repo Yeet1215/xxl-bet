@@ -62,7 +62,22 @@ export function ValueInput({ name, betType, unitLabel, defaultValue, ariaLabel }
   }
 
   return (
-    <div className="flex-1 flex gap-2" role="radiogroup" aria-label={ariaLabel}>
+    <div
+      className="flex-1 flex gap-2"
+      role="radiogroup"
+      aria-label={ariaLabel}
+      onKeyDown={(e) => {
+        // Radio keyboard semantics: arrows move selection AND focus (the
+        // unselected button is tabIndex=-1, unreachable without this).
+        if (!['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'].includes(e.key)) return
+        e.preventDefault()
+        const next = (yesno ?? '1') === '1' ? '0' : '1'
+        setYesno(next)
+        e.currentTarget
+          .querySelectorAll<HTMLButtonElement>('[role="radio"]')
+          [next === '1' ? 0 : 1]?.focus()
+      }}
+    >
       {(['1', '0'] as const).map((option) => (
         <button
           key={option}

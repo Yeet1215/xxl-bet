@@ -13,6 +13,7 @@ import {
   joinBoardSchema,
   updateBoardSettingsSchema,
 } from '@/lib/validators/boards'
+import { nowMinutesInTz } from '@/lib/utils/tz'
 
 export type BoardActionState = { error: string } | { ok: true } | undefined
 
@@ -137,6 +138,29 @@ export async function updateBoardSettings(
   }
   const { boardId, name, subject, unitLabel, lockTime, windowSize, maxPoints, exactMultiplier } =
     parsed.data
+
+  // Anti-peek guard (security review M2): once today's bets are revealed
+  // (now >= current lock), moving the lock LATER would silently reopen the
+  // round with everyone's bets visible. Refuse; the change is fine tomorrow.
+  const [current] = await db
+    .select({
+      ownerId: boards.ownerId,
+      lockTimeMinutes: boards.lockTimeMinutes,
+      timezone: boards.timezone,
+    })
+    .from(boards)
+    .where(eq(boards.id, boardId))
+    .limit(1)
+  if (!current || current.ownerId !== user.id) {
+    return { error: 'Board not found' }
+  }
+  const nowMinutes = nowMinutesInTz(current.timezone)
+  if (nowMinutes >= current.lockTimeMinutes && lockTime > nowMinutes) {
+    return {
+      error:
+        'Today’s bets are already revealed — a later lock time would reopen them. Change it after midnight.',
+    }
+  }
 
   // Ownership check on the client-supplied ID (CLAUDE.md rule) — the WHERE
   // clause is the guard: no row updated means not the owner (or no board).

@@ -30,8 +30,9 @@ export function scoreRound(
 
   const { betType, windowSize, maxPoints, exactMultiplier } = settings
 
-  // yesno: right-or-wrong. windowSize/exactMultiplier deliberately unused —
-  // a correct guess IS the exact hit, and there is no "close".
+  // yesno: right-or-wrong. windowSize/exactMultiplier deliberately unused,
+  // and isExact stays FALSE — "exact" is the celebrated rarity (confetti,
+  // Clairvoyant, double points); a correct coin flip is just a win (isClosest).
   if (betType === 'yesno') {
     return bets.map((bet) => {
       const correct = bet.betValue === outcome
@@ -40,7 +41,7 @@ export function scoreRound(
         score: correct ? maxPoints : 0,
         diff: correct ? 0 : 1,
         isClosest: correct,
-        isExact: correct,
+        isExact: false,
       }
     })
   }

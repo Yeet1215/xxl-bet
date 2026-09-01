@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 
 import { getCurrentUser } from '@/lib/auth/session'
 import { getBoardsForUser } from '@/lib/queries/boards'
+import { getTodayRoundStatuses } from '@/lib/queries/rounds'
 import { formatMinutes } from '@/lib/utils/tz'
 import { BET_TYPE_META } from '@/lib/constants/bet-types'
 import { Stamp } from '@/components/ui/stamp'
@@ -15,6 +16,7 @@ export default async function DashboardPage() {
   if (!user) redirect('/login')
 
   const userBoards = await getBoardsForUser(user.id)
+  const todayStatuses = await getTodayRoundStatuses(userBoards, user.id)
 
   return (
     <div className="flex flex-col gap-6">
@@ -33,27 +35,52 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <ul className="flex flex-col gap-3">
-          {userBoards.map((board) => (
-            <li key={board.id}>
-              <Link
-                href={`/board/${board.id}`}
-                className="flex flex-col gap-2 rounded-[12px] border border-border bg-surface-1 p-4 hover:border-accent transition-colors"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-bold text-text-primary">{board.name}</span>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {board.role === 'owner' && <Stamp tone="open">Owner</Stamp>}
-                    <Stamp>{BET_TYPE_META[board.betType].label}</Stamp>
+          {userBoards.map((board) => {
+            const status = todayStatuses.get(board.id)
+            return (
+              <li key={board.id}>
+                <Link
+                  href={`/board/${board.id}`}
+                  className="flex flex-col gap-2 rounded-[12px] border border-border bg-surface-1 p-4 hover:border-accent transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-bold text-text-primary">{board.name}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {board.role === 'owner' && <Stamp tone="accent">Owner</Stamp>}
+                      <Stamp>{BET_TYPE_META[board.betType].label}</Stamp>
+                      {status && (
+                        <Stamp
+                          tone={
+                            status.state === 'decided'
+                              ? 'decided'
+                              : status.state === 'locked'
+                                ? 'locked'
+                                : 'open'
+                          }
+                        >
+                          {status.state}
+                        </Stamp>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <p className="text-sm text-text-secondary">{board.subject}</p>
-                <p className="text-xs text-text-muted">
-                  {board.memberCount} {board.memberCount === 1 ? 'player' : 'players'} · locks{' '}
-                  <span className="font-mono">{formatMinutes(board.lockTimeMinutes)}</span>
-                </p>
-              </Link>
-            </li>
-          ))}
+                  <p className="text-sm text-text-secondary">{board.subject}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-text-muted">
+                      <span className="font-mono">{board.memberCount}</span>{' '}
+                      {board.memberCount === 1 ? 'player' : 'players'} · locks{' '}
+                      <span className="font-mono">{formatMinutes(board.lockTimeMinutes)}</span>
+                    </p>
+                    {status?.state === 'open' &&
+                      (status.hasBet ? (
+                        <span className="text-xs font-semibold text-success">✓ Bet placed</span>
+                      ) : (
+                        <span className="text-xs font-bold text-accent-deep">Bet now →</span>
+                      ))}
+                  </div>
+                </Link>
+              </li>
+            )
+          })}
         </ul>
       )}
 

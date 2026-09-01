@@ -27,11 +27,17 @@ export function Leaderboard({ rows, viewerId }: { rows: LeaderboardRow[]; viewer
                 {isMe && <span className="text-text-muted font-normal"> (you)</span>}
               </p>
               <p className="text-xs text-text-muted">
-                {row.played} played · {row.wins} {row.wins === 1 ? 'win' : 'wins'}
-                {row.exacts > 0 && ` · ${row.exacts} exact`}
+                <span className="font-mono">{row.played}</span> played ·{' '}
+                <span className="font-mono">{row.wins}</span> {row.wins === 1 ? 'win' : 'wins'}
+                {row.exacts > 0 && (
+                  <>
+                    {' '}
+                    · <span className="font-mono">{row.exacts}</span> exact
+                  </>
+                )}
               </p>
             </div>
-            {row.role === 'owner' && <Stamp tone="open">Owner</Stamp>}
+            {row.role === 'owner' && <Stamp tone="accent">Owner</Stamp>}
             <span className="font-mono text-sm font-bold shrink-0 w-16 text-right">
               {row.points}
             </span>

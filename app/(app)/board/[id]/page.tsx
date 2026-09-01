@@ -6,6 +6,7 @@ import { getBoardLeaderboard } from '@/lib/queries/stats'
 import {
   getMyPendingDecideRequest,
   getPendingDecideRequests,
+  getPendingRequestsForRounds,
   getRoundWithBets,
   getUndecidedPastRounds,
 } from '@/lib/queries/rounds'
@@ -17,6 +18,8 @@ import { ButtonLink } from '@/components/ui/button-link'
 import { InviteCode } from '@/components/boards/invite-code'
 import { TodayRound } from '@/components/boards/today-round'
 import { DecideForm } from '@/components/boards/decide-form'
+import { DecideRequests } from '@/components/boards/decide-requests'
+import { RequestDecideForm } from '@/components/boards/request-decide-form'
 import { Leaderboard } from '@/components/boards/leaderboard'
 
 export default async function BoardPage({ params }: PageProps<'/board/[id]'>) {
@@ -44,7 +47,11 @@ export default async function BoardPage({ params }: PageProps<'/board/[id]'>) {
     !isOwner && roundUndecided
       ? ((await getMyPendingDecideRequest(round.id, user.id))?.proposedOutcomeValue ?? null)
       : null
-  const pastUndecided = isOwner ? await getUndecidedPastRounds(board.id, roundDate) : []
+  // Past undecided rounds are visible to EVERYONE (review fix: a decide
+  // request submitted late yesterday must not vanish at midnight) — owners
+  // get the approve/deny queue + decide form, members the request form.
+  const pastUndecided = await getUndecidedPastRounds(board.id, roundDate)
+  const pastRequests = await getPendingRequestsForRounds(pastUndecided.map((r) => r.id))
 
   return (
     <div className="flex flex-col gap-6">
@@ -88,26 +95,50 @@ export default async function BoardPage({ params }: PageProps<'/board/[id]'>) {
             Waiting for a result
           </h2>
           <ul className="rounded-[12px] border border-border bg-surface-1 divide-y divide-border">
-            {pastUndecided.map((pastRound) => (
-              <li key={pastRound.id} className="flex flex-col gap-2 px-4 py-3">
-                <span className="text-sm font-semibold">
-                  {formatRoundDate(pastRound.roundDate)}
-                </span>
-                <DecideForm
-                  boardId={board.id}
-                  roundDate={pastRound.roundDate}
-                  betType={board.betType}
-                  unitLabel={board.unitLabel}
-                />
-              </li>
-            ))}
+            {pastUndecided.map((pastRound) => {
+              const requests = pastRequests.filter((r) => r.roundId === pastRound.id)
+              const myPending =
+                requests.find((r) => r.requesterId === user.id)?.proposedOutcomeValue ?? null
+              return (
+                <li key={pastRound.id} className="flex flex-col gap-2 px-4 py-3">
+                  <span className="text-sm font-semibold">
+                    {formatRoundDate(pastRound.roundDate)}
+                  </span>
+                  {isOwner ? (
+                    <>
+                      {requests.length > 0 && (
+                        <DecideRequests
+                          requests={requests}
+                          betType={board.betType}
+                          unitLabel={board.unitLabel}
+                        />
+                      )}
+                      <DecideForm
+                        boardId={board.id}
+                        roundDate={pastRound.roundDate}
+                        betType={board.betType}
+                        unitLabel={board.unitLabel}
+                      />
+                    </>
+                  ) : (
+                    <RequestDecideForm
+                      boardId={board.id}
+                      roundDate={pastRound.roundDate}
+                      betType={board.betType}
+                      unitLabel={board.unitLabel}
+                      myPendingValue={myPending}
+                    />
+                  )}
+                </li>
+              )
+            })}
           </ul>
         </section>
       )}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-bold uppercase tracking-[0.06em] text-text-muted">
-          Leaderboard ({leaderboard.length})
+          Leaderboard (<span className="font-mono">{leaderboard.length}</span>)
         </h2>
         <Leaderboard rows={leaderboard} viewerId={user.id} />
       </section>

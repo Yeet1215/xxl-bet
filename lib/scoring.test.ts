@@ -105,7 +105,9 @@ describe('scoreRound — yesno', () => {
 
   it('correct gets maxPoints (not multiplied), wrong gets 0', () => {
     const result = scoreRound([bet('right', 1), bet('wrong', 0)], 1, YESNO)
-    expect(byUser(result, 'right')).toMatchObject({ score: 100, isExact: true, isClosest: true })
+    // isExact stays false — a correct coin flip is a win, not a celebrated
+    // "exact hit" (no confetti/Clairvoyant/double points for yesno).
+    expect(byUser(result, 'right')).toMatchObject({ score: 100, isExact: false, isClosest: true })
     expect(byUser(result, 'wrong')).toMatchObject({ score: 0, isExact: false, isClosest: false })
   })
 })

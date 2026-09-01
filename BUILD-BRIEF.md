@@ -64,7 +64,7 @@ Per-board settings (stored on the board, tunable without code changes):
 
 Examples (defaults): exact → 200 · closest at 7 min off → 100 · second-closest 12 min off → 80 · off by 30 → 50 · off by 59 → 2 · off by 75 and not closest → 0.
 
-**`yesno` boards** — right-or-wrong: correct → `maxPoints` (isExact = true), wrong → 0. `windowSize`/`exactMultiplier` unused (hidden in the UI).
+**`yesno` boards** — right-or-wrong: correct → `maxPoints` (isClosest = true, shown as "Correct"), wrong → 0. `windowSize`/`exactMultiplier` unused (hidden in the UI), and **isExact stays false** — the exact-hit celebration (confetti, Clairvoyant, double points) is reserved for real precision, not coin flips (chunk-7 review fix).
 
 Scoring is a **pure function** (`lib/scoring.ts`, chunk 4): `(bets, outcome, settings) → scores`. Deterministic + idempotent, so re-deciding a round just recomputes. Unit-test this one file properly — it's the money logic.
 
@@ -90,7 +90,8 @@ DECIDED  outcome + decidedAt/decidedBy set · scores computed & stored on bets
 
 ## Data model (implemented in chunk 1; `lib/db/schema.ts` is the source of truth once it exists)
 
-- **users** — `id`, `username` (unique, lower-indexed), `displayName`, `passwordHash`, `createdAt`.
+- **users** — `id`, `username` (unique, lower-indexed), `displayName`, `passwordHash`, `email` (nullable, lower-unique; required at registration since chunk 7, null for grandfathered accounts — no email = no password reset), `createdAt`.
+- **password_reset_tokens** — chunk 7: `userId`, `tokenHash` (sha256, unique), `expiresAt` (1h), `usedAt` (one-use), `createdAt`. Reset kills all sessions.
 - **sessions** — fitapp pattern: `id`, `userId`, `tokenHash` (sha256), `expiresAt` (30-day rolling), `createdAt`.
 - **boards** — `id`, `ownerId` FK, `name`, `subject` (what's being bet on, shown as the board tagline), `betType` (`time`/`number`/`yesno`, fixed at creation), `unitLabel` (nullable; number boards only), `inviteCode` (unique, 8 chars A–Z/2–9 minus lookalikes, visible to all members), `lockTimeMinutes` (smallint, default 540 = 09:00), `windowSize` (integer, default 60, in value units), `maxPoints` (default 100), `exactMultiplier` (default 2), `timezone` (default `Europe/Amsterdam`), `createdAt`.
 - **board_members** — `boardId`, `userId`, `role` (`owner`/`member`), `joinedAt`; unique `(boardId, userId)`.
@@ -98,7 +99,7 @@ DECIDED  outcome + decidedAt/decidedBy set · scores computed & stored on bets
 - **bets** — `id`, `roundId`, `userId`, `betValue` (integer, meaning per board betType), `createdAt`, `updatedAt`; unique `(roundId, userId)`. Resolve artifacts (nullable until decided): `score`, `diffMinutes` (naming kept; holds the generic value diff), `isClosest`, `isExact`.
 - **decide_requests** — `id`, `roundId`, `requesterId`, `proposedOutcomeValue` (integer), `status` (`pending`/`approved`/`denied`), `createdAt`, `reviewedAt`, `reviewedById`. One *pending* request per (round, requester).
 
-Conventions: UUID PKs, FK indexes, explicit `onDelete` (board cascade → rounds → bets/requests; user delete = restrict for now — revisit if ever needed). **All bet/outcome values are generic integers interpreted via the board's betType** — time = minutes since midnight (see CLAUDE.md gotcha), number = the integer itself, yesno = 1/0.
+Conventions: UUID PKs, FK indexes, explicit `onDelete` (board cascade → rounds → bets/requests; `boards.ownerId` and decided/reviewed-by refs are **restrict**, membership/bet/request user-refs **cascade** — but account deletion is not offered in v1, so no cascade fires in practice; deciding whether history should survive a deletion is a prerequisite for ever building account deletion). **All bet/outcome values are generic integers interpreted via the board's betType** — time = minutes since midnight (see CLAUDE.md gotcha), number = the integer itself, yesno = 1/0.
 
 ## Leaderboard & stats (chunk 5)
 
@@ -106,16 +107,16 @@ Conventions: UUID PKs, FK indexes, explicit `onDelete` (board cascade → rounds
 - **Profile page:** per-board and overall stats — total points, rounds played, win count, exact count, average `diffMinutes` (the "how well do you know him" metric), best/current win streak, bet history list (date · bet · outcome · diff · points).
 - All derivable from `bets` — no denormalized counters until proven slow.
 
-## Surfaces (v1)
+## Surfaces (v1 as shipped)
 
-1. `/login`, `/register` — auth.
-2. `/` (dashboard) — your boards + "today" quick-bet per board; create/join board.
-3. `/board/[id]` — the board: today's round (bet input before lock; revealed bets after lock; outcome + scored results once decided), leaderboard, recent rounds.
-4. `/board/[id]/settings` — owner: name/subject/lock/scoring settings, invite code, members.
-5. `/profile` (+ `/profile/[username]`?) — stats + history. v1 can be own-profile only.
+1. `/login`, `/register` (email required), `/forgot-password`, `/reset-password/[token]`.
+2. `/` (dashboard) — your boards with live today-status (open/locked/decided + bet-placed indicator + "Bet now →"), create/join board. *(Inline quick-bet from the dashboard: V2 roadmap.)*
+3. `/board/[id]` — today's round (bet input before lock; revealed bets after lock; scored results + next-round countdown once decided), "Waiting for a result" past-round decide/request lists, leaderboard, invite code. *(Browsable past-round results ("recent rounds"): V2 roadmap.)*
+4. `/board/[id]/settings` — owner: name/subject/lock/scoring settings (bet type immutable; lock can't be extended past today's reveal).
+5. `/profile` — own stats + streaks + bet history.
 
 Deferred (tracked in `chunks.md`): count-based bets (times per day), multiple bet subjects per board, notifications, PWA, season resets, badges.
 
 ---
 
-**Last Updated:** 2026-09-01 (Chunk 4: re-decide relaxed to anytime-by-owner. Chunk 2: bet types added — boards carry `betType` time/number/yesno + `unitLabel`; bet/outcome columns generalized to integers (`betValue`/`outcomeValue`/`proposedOutcomeValue`, `windowSize`); scoring spec split per type. Earlier same day: initial brief — concept, glossary, roles, scoring formula, round lifecycle, data model, surfaces; decisions locked with owner: name "XXL Bet", lock+hidden bets, scoring defaults 100/60min/2×, open registration + invite codes, generic "decide/outcome" terminology.)
+**Last Updated:** 2026-09-01 (Chunk 7: users.email + password_reset_tokens; surfaces updated to as-shipped (quick-bet + recent-rounds moved to V2 roadmap); yesno isExact=false; cascade wording fixed to match schema; lock-extension anti-peek rule. Chunk 4: re-decide relaxed to anytime-by-owner. Chunk 2: bet types added — boards carry `betType` time/number/yesno + `unitLabel`; bet/outcome columns generalized to integers (`betValue`/`outcomeValue`/`proposedOutcomeValue`, `windowSize`); scoring spec split per type. Earlier same day: initial brief — concept, glossary, roles, scoring formula, round lifecycle, data model, surfaces; decisions locked with owner: name "XXL Bet", lock+hidden bets, scoring defaults 100/60min/2×, open registration + invite codes, generic "decide/outcome" terminology.)

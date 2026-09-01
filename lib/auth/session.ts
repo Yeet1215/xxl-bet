@@ -105,6 +105,11 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
   return result.user
 })
 
+/** Kill every session of a user — used after a password reset. */
+export async function deleteSessionsForUser(userId: string): Promise<void> {
+  await db.delete(sessions).where(eq(sessions.userId, userId))
+}
+
 export async function requireUser(): Promise<User> {
   const user = await getCurrentUser()
   if (!user) throw new Error('UNAUTHENTICATED')

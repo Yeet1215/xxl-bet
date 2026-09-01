@@ -47,6 +47,15 @@ export function RegisterForm() {
         placeholder="How you show up on leaderboards"
       />
       <Field
+        label="Email"
+        name="email"
+        type="email"
+        autoComplete="email"
+        required
+        maxLength={254}
+        placeholder="Only used for password resets"
+      />
+      <Field
         label="Password"
         name="password"
         type="password"

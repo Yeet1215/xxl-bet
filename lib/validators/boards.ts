@@ -14,6 +14,15 @@ const lockTimeSchema = z
       ctx.addIssue({ code: 'custom', message: 'Lock time must be HH:MM' })
       return z.NEVER
     }
+    // 00:00 would mean "locked all day" (now >= 0 is always true) — surely
+    // not what anyone wants; 23:59 is the "open all day" setting.
+    if (minutes === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'A 00:00 lock never opens — use 23:59 for all-day betting',
+      })
+      return z.NEVER
+    }
     return minutes
   })
 

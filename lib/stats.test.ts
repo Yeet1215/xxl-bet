@@ -56,7 +56,7 @@ describe('deriveBoardStats', () => {
 
   it('yesno boards get hitRate but a null avgDiff', () => {
     const [stats] = deriveBoardStats([
-      row({ roundDate: '2026-09-01', betType: 'yesno', isClosest: true, isExact: true, diffMinutes: 0 }),
+      row({ roundDate: '2026-09-01', betType: 'yesno', isClosest: true, diffMinutes: 0 }),
       row({ roundDate: '2026-09-02', betType: 'yesno', diffMinutes: 1 }),
     ])
     expect(stats.avgDiff).toBeNull()

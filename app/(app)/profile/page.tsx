@@ -96,15 +96,28 @@ export default async function ProfilePage() {
                   <span className="font-mono text-sm font-bold shrink-0">{stats.points} pts</span>
                 </div>
                 <p className="text-xs text-text-secondary">
-                  {stats.played} played · {stats.wins} wins · {stats.exacts} exact ·{' '}
-                  {stats.avgDiff !== null
-                    ? `avg miss ${stats.avgDiff}${stats.betType === 'time' ? 'm' : ''}`
-                    : `hit rate ${Math.round(stats.hitRate * 100)}%`}
+                  <span className="font-mono">{stats.played}</span> played ·{' '}
+                  <span className="font-mono">{stats.wins}</span> wins ·{' '}
+                  <span className="font-mono">{stats.exacts}</span> exact ·{' '}
+                  {stats.avgDiff !== null ? (
+                    <>
+                      avg miss{' '}
+                      <span className="font-mono">
+                        {stats.avgDiff}
+                        {stats.betType === 'time' ? 'm' : ''}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      hit rate{' '}
+                      <span className="font-mono">{Math.round(stats.hitRate * 100)}%</span>
+                    </>
+                  )}
                 </p>
                 {(stats.currentStreak > 1 || stats.bestStreak > 1) && (
                   <div className="flex gap-1.5">
                     {stats.currentStreak > 1 && (
-                      <Stamp tone="open">🔥 {stats.currentStreak} win streak</Stamp>
+                      <Stamp tone="accent">🔥 {stats.currentStreak} win streak</Stamp>
                     )}
                     {stats.bestStreak > 1 && stats.bestStreak !== stats.currentStreak && (
                       <Stamp>Best streak {stats.bestStreak}</Stamp>

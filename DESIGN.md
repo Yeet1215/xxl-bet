@@ -57,7 +57,7 @@ enough. The *copy* carries the joke; the *chrome* stays clean.
 
 - **Buttons:** `primary` (accent fill, white text, 600) · `secondary` (white, 1px border, navy text) · `ghost` (borderless, secondary text) · `danger` only as confirmation-step primary. Radius 10px.
 - **Inputs:** white bg, 1px border, focus → `accent` border (no glow). Label above, 13px, `text-secondary`. Time inputs: native `<input type="time">` styled to mono (mobile keyboards do the right thing) — fitapp's iOS lesson applies: native controls, never simulated ones.
-- **Status stamps:** small uppercase labels, 11px, 0.08em tracking, soft-tinted pills — `OPEN` (accent-soft/accent-deep), `LOCKED` (surface-2/text-secondary), `DECIDED` (success-soft/success). Reuse one `<Stamp>` component.
+- **Status stamps:** small uppercase labels, 11px, 0.08em tracking, soft-tinted pills — one `<Stamp>` component, five tones: `open`/`locked`/`decided` are **round states only** (accent-soft, surface-2, success-soft); `accent` for non-state highlights (Owner, streaks — visually = open, semantically distinct); `neutral` (surface-2/muted) for plain labels (bet type). Never reuse a state tone for a non-state label (chunk-7 review fix).
 - **Bet rows:** avatar-initial circle · username · mono bet time · (after decide) mono diff + points, closest row tinted `accent-soft`, exact row `success-soft`.
 - **Leaderboard rows:** rank number mono, top-3 ranks get accent treatment; points right-aligned mono.
 - **Toasts:** top-center, `role="status"` `aria-live="polite"`, success/error on every mutation (fitapp rule).
@@ -72,4 +72,4 @@ bets yet. Scared?" · after lock → "Bets are in. Now we wait." · exact hit �
 
 ---
 
-**Last Updated:** 2026-09-01 (Initial design language: xxldirect-derived light palette, Geist + mono-numeral signature, single-column layout, component vocabulary, status-stamp system, voice.)
+**Last Updated:** 2026-09-01 (Chunk 7: stamp tones formalized — state tones vs `accent`/`neutral`, neutral now surface-2. Initial: xxldirect-derived light palette, Geist + mono-numeral signature, single-column layout, component vocabulary, voice.)

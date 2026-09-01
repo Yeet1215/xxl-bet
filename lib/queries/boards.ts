@@ -13,6 +13,7 @@ export async function getBoardsForUser(userId: string) {
       subject: boards.subject,
       betType: boards.betType,
       lockTimeMinutes: boards.lockTimeMinutes,
+      timezone: boards.timezone,
       role: boardMembers.role,
       memberCount: sql<number>`(
         select count(*)::int from ${boardMembers} bm where bm.board_id = ${boards.id}

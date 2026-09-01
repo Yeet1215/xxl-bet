@@ -29,12 +29,32 @@ export const users = pgTable(
     username: text('username').notNull().unique(),
     displayName: text('display_name').notNull(),
     passwordHash: text('password_hash').notNull(),
+    // Required at registration since chunk 7; nullable for the grandfathered
+    // pre-email accounts (they can add one later; no email = no password reset).
+    email: text('email'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     // Case-insensitive uniqueness: 'Bob' and 'bob' are the same account.
     uniqueIndex('users_username_lower_idx').on(sql`lower(${t.username})`),
+    uniqueIndex('users_email_lower_idx').on(sql`lower(${t.email})`),
   ],
+)
+
+export const passwordResetTokens = pgTable(
+  'password_reset_tokens',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    // sha256 of the emailed token — the raw token only ever lives in the link.
+    tokenHash: text('token_hash').notNull().unique(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('password_reset_tokens_user_idx').on(t.userId)],
 )
 
 export const sessions = pgTable(
@@ -139,8 +159,10 @@ export const bets = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     // Resolve artifacts — null until the round is decided; recomputed on
     // re-decide (scoring is pure + idempotent, lib/scoring.ts, chunk 4).
+    // score max = maxPoints(1000) × multiplier(10) = 10k, fits smallint;
+    // diff is a generic VALUE diff (number boards reach ±2×10⁸) → integer.
     score: smallint('score'),
-    diffMinutes: smallint('diff_minutes'),
+    diffMinutes: integer('diff_minutes'),
     isClosest: boolean('is_closest'),
     isExact: boolean('is_exact'),
   },
