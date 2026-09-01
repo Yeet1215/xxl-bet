@@ -144,6 +144,7 @@ bug-driven rules to this list as they're earned.
 - **`useActionState` success effects must guard against the same state object firing twice** (double-toast bug): `handledStateRef` pattern — `if (state && state !== handledStateRef.current && state.success) { handledStateRef.current = state; ... }`.
 - **iOS-reliable form controls:** native `<input>` elements, never a styled `<button role="switch">`+onClick (iOS Safari swallows taps intermittently). Selection controls that filter their options: plain buttons driving `useState` + a hidden input carrying the value.
 - **pnpm 11 build approvals:** `pnpm-workspace.yaml` `allowBuilds` must have real `true` values — pnpm scaffolds it with literal "set this to true or false" placeholder text that breaks install.
+- **Auth guards: `requireUser()` (throws) is for server actions only.** Pages and layouts guard with `getCurrentUser()` + `redirect('/login')`. Next renders layout and page **in parallel**, so a page that throws UNAUTHENTICATED logs a noisy error stack on every logged-out visit even though the layout's redirect wins (hit on day one, chunk 1).
 
 ---
 
