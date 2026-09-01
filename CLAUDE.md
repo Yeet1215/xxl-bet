@@ -117,6 +117,7 @@ Library rule: prefer the simpler API; one-line justification per new dependency 
 ## Deployment
 
 - **Hosting:** Vercel. `master` = production (the only branch for now — no `development` branch in this repo unless the owner introduces one).
+- **⚠️ PUSH POLICY (since 2026-09-01, testers are live):** a push to `master` IS a production deploy. **Never `git push` without the owner's explicit go-ahead for that specific push.** Commit locally as usual; at the end of any work, remind the owner when unpushed commits are waiting (`git log origin/master..master --oneline`).
 - **Env vars:** `DATABASE_URL`, `AUTH_SECRET`. Document every new one in `.env.example`.
 - **Migrations:** `drizzle-kit migrate` via `prebuild` on Vercel. **Never `drizzle-kit push` against a deployed env.**
 
