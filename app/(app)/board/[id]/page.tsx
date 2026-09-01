@@ -1,7 +1,8 @@
 import { notFound, redirect } from 'next/navigation'
 
 import { getCurrentUser } from '@/lib/auth/session'
-import { getBoardForUser, getBoardMembers } from '@/lib/queries/boards'
+import { getBoardForUser } from '@/lib/queries/boards'
+import { getBoardLeaderboard } from '@/lib/queries/stats'
 import {
   getMyPendingDecideRequest,
   getPendingDecideRequests,
@@ -16,6 +17,7 @@ import { ButtonLink } from '@/components/ui/button-link'
 import { InviteCode } from '@/components/boards/invite-code'
 import { TodayRound } from '@/components/boards/today-round'
 import { DecideForm } from '@/components/boards/decide-form'
+import { Leaderboard } from '@/components/boards/leaderboard'
 
 export default async function BoardPage({ params }: PageProps<'/board/[id]'>) {
   const user = await getCurrentUser()
@@ -28,7 +30,7 @@ export default async function BoardPage({ params }: PageProps<'/board/[id]'>) {
   const { board, membership } = row
   const isOwner = membership.role === 'owner'
 
-  const members = await getBoardMembers(board.id)
+  const leaderboard = await getBoardLeaderboard(board.id)
 
   // Lock state is derived in the board's timezone — never stored (BUILD-BRIEF).
   const roundDate = todayInTz(board.timezone)
@@ -105,22 +107,9 @@ export default async function BoardPage({ params }: PageProps<'/board/[id]'>) {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-bold uppercase tracking-[0.06em] text-text-muted">
-          Players ({members.length})
+          Leaderboard ({leaderboard.length})
         </h2>
-        <ul className="rounded-[12px] border border-border bg-surface-1 divide-y divide-border">
-          {members.map((member) => (
-            <li key={member.userId} className="flex items-center gap-3 px-4 py-3">
-              <span className="w-8 h-8 rounded-full bg-accent-soft text-accent-deep flex items-center justify-center text-sm font-bold shrink-0">
-                {member.displayName.charAt(0).toUpperCase()}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold truncate">{member.displayName}</p>
-                <p className="text-xs text-text-muted truncate">@{member.username}</p>
-              </div>
-              {member.role === 'owner' && <Stamp tone="open">Owner</Stamp>}
-            </li>
-          ))}
-        </ul>
+        <Leaderboard rows={leaderboard} viewerId={user.id} />
       </section>
 
       <section className="flex flex-col gap-3">

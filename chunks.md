@@ -19,9 +19,10 @@
 
 - **4 — Deciding & scoring (2026-09-01).** No migration. **`lib/scoring.ts`** pure engine + **first test infra** (vitest, `pnpm test`, 9 tests = executable BUILD-BRIEF spec): time/number closeness (linear decay, closest→max incl. ties + outside-window, exact→×multiplier) and yesno right-or-wrong (multiplier deliberately ignored). **Decide flows:** `decideRound` (owner; works pre-lock = "close the bet early"; re-decide ANYTIME recomputes — BUILD-BRIEF's same-day rule relaxed, doc updated), `submitDecideRequest` (member, post-lock, one pending each, resubmit updates), `approveDecideRequest`/`denyDecideRequest` (ownership via request→round→board join; deciding auto-denies remaining pending). `ensureRound` shared helper (bets + decide + requests all lazy-create). **UI:** round card gains DECIDED state (outcome stamp, results ranked by score, `±diff`, `+points`, closest = accent-soft + "Closest", exact = success-soft + "Clairvoyant"), owner decide form + request queue, member request form, owner "Fix outcome" re-decide disclosure, owner "Waiting for a result" list for past undecided rounds (14 cap). Shared `<ValueInput>` (time/number/yesno) extracted — BetForm/DecideForm/RequestDecideForm. Confetti-on-exact deferred to chunk 6 polish.
 
+- **5 — Leaderboard & profile (2026-09-01).** No migration. **Leaderboard** replaced the board page's "Players" section (one ranked list, both jobs): all members ranked by points → wins → name, played/wins/exacts subline, top-3 rank accents, zero-pointers at the bottom; `getBoardLeaderboard` = two simple queries merged in JS. **Profile** (`/profile`): overall 4-stat strip (points summed across boards — fun over purity), per-board cards (points, played, wins, exacts, avg miss for time/number vs hit-rate % for yesno, 🔥 current + best win streaks), recent-bets history (last 20: bet → outcome, +points colored by closest/exact). Derivation is a pure unit-tested `lib/stats.ts` (5 tests; streaks are over *played* rounds — skipped days don't break them). Suite now 14 tests.
+
 ## Planned
 
-- **5 — Leaderboard & profile.** Board leaderboard (points, wins, exacts), profile stats (avg diff, streaks) + bet history.
 - **6 — Polish pass.** Empty states, copy/voice pass, mobile ergonomics, seed the founding board, invite the colleagues. 🎉
 
 ## Deferred (unscheduled backlog)
@@ -43,4 +44,4 @@
 
 ---
 
-**Last Updated:** 2026-09-01 (Chunks 0–4 shipped: scaffold, foundations, boards + bet types, rounds & betting, deciding & scoring (pure engine + vitest, decide/request/approve flows, results view). Chunks 5–6 planned.)
+**Last Updated:** 2026-09-01 (Chunks 0–5 shipped: scaffold, foundations, boards + bet types, rounds & betting, deciding & scoring, leaderboard & profile (ranked members list, per-board stats + streaks, bet history). Chunk 6 planned.)
