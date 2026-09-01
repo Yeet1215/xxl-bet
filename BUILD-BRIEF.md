@@ -29,7 +29,7 @@ outcomes with an audit trail).
 | **Board** | One competition/leaderboard (e.g. "Arrival time of R."). Has an owner, members, settings, an invite code, and a **bet type** (`time`/`number`/`yesno`, fixed at creation). |
 | **Round** | One betting instance on a board — for v1 always a calendar date (one round per day). |
 | **Bet** | One member's guess for a round: a **value** whose meaning follows the board's bet type (time = minutes since midnight, number = the integer, yesno = 1/0). One bet per member per round, editable until lock. |
-| **Lock** | The per-board time of day after which bets can't be placed/edited and all bets become visible. Before lock, bets are **hidden** (you only see *who* has bet, not *what*). |
+| **Lock** | The per-board time of day after which bets can't be placed/edited and all bets become visible. Before lock, bets are **hidden** — you see *who* has bet and *when* they filled it in ("filled 08:45", edits update it), never *what*. |
 | **Outcome** | The actual observed time (e.g. he walked in at 10:15). Generic word — never "arrival time" in shared code/UI components. |
 | **Decide** | Resolving a round by setting its outcome → scores computed. Owner-only. |
 | **Decide request** | A member's proposal for the outcome ("Request to decide" + input labeled "Outcome"). Owner approves (→ round decided with that outcome) or denies. |

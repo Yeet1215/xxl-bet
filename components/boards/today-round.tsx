@@ -1,6 +1,6 @@
 import type { Board, Round } from '@/lib/db/schema'
 import type { RoundBet } from '@/lib/queries/rounds'
-import { formatMinutes } from '@/lib/utils/tz'
+import { formatMinutes, timeOfDayInTz } from '@/lib/utils/tz'
 import { formatBetValue, formatRoundDate } from '@/lib/utils/format'
 import { Stamp } from '@/components/ui/stamp'
 import { BetForm } from '@/components/boards/bet-form'
@@ -139,8 +139,13 @@ export function TodayRound({
                   {showValue ? (
                     formatBetValue(bet.betValue, board.betType, board.unitLabel)
                   ) : (
-                    <span className="text-text-muted tracking-widest" aria-label="Hidden until lock">
-                      •••
+                    // Bet value stays hidden until lock — but WHEN they locked
+                    // it in is public (edits update it: late fiddlers exposed).
+                    <span className="text-xs font-normal text-text-muted">
+                      filled{' '}
+                      <span className="font-semibold">
+                        {timeOfDayInTz(bet.updatedAt, board.timezone)}
+                      </span>
                     </span>
                   )}
                 </span>

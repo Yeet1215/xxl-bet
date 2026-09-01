@@ -28,6 +28,16 @@ export function nowMinutesInTz(timeZone: string): number {
   return hour * 60 + minute
 }
 
+/** A timestamp's wall-clock time in the given timezone, as 'HH:MM'. */
+export function timeOfDayInTz(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(date)
+}
+
 /** 625 → '10:25'. Display formatting only — storage stays integer. */
 export function formatMinutes(minutes: number): string {
   const h = Math.floor(minutes / 60)
