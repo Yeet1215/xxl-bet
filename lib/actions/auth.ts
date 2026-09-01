@@ -150,15 +150,16 @@ export async function requestPasswordReset(
     await db.insert(passwordResetTokens).values({ userId: user.id, tokenHash, expiresAt })
 
     const base = process.env.APP_URL ?? 'http://localhost:3000'
-    const { error } = await sendEmail(
+    const resetLink = `${base}/reset-password/${token}`
+    const { error, skipped } = await sendEmail(
       user.email,
       'Reset your XXL Bet password',
-      createElement(ResetPasswordEmail, {
-        username: user.username,
-        resetLink: `${base}/reset-password/${token}`,
-      }),
+      createElement(ResetPasswordEmail, { username: user.username, resetLink }),
     )
     if (error) console.error('[requestPasswordReset] send failed:', error)
+    // Dev fallback (no RESEND_API_KEY): surface the link in the server console
+    // so the flow is testable without a key. Never logged when actually sent.
+    if (skipped) console.warn(`[requestPasswordReset] email disabled — reset link: ${resetLink}`)
   }
 
   return { success: true }
