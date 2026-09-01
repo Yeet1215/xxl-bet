@@ -9,6 +9,7 @@ import { BET_TYPE_META } from '@/lib/constants/bet-types'
 import { Stamp } from '@/components/ui/stamp'
 import { ButtonLink } from '@/components/ui/button-link'
 import { JoinBoardForm } from '@/components/boards/join-board-form'
+import { BetForm } from '@/components/boards/bet-form'
 
 export default async function DashboardPage() {
   // Pages guard with getCurrentUser + redirect, NOT requireUser (CLAUDE.md gotcha).
@@ -37,47 +38,56 @@ export default async function DashboardPage() {
         <ul className="flex flex-col gap-3">
           {userBoards.map((board) => {
             const status = todayStatuses.get(board.id)
+            // Card is a div, not one big <Link> — the quick-bet form nests
+            // interactive elements, which is invalid inside an anchor.
             return (
               <li key={board.id}>
-                <Link
-                  href={`/board/${board.id}`}
-                  className="flex flex-col gap-2 rounded-[12px] border border-border bg-surface-1 p-4 hover:border-accent transition-colors"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="font-bold text-text-primary">{board.name}</span>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {board.role === 'owner' && <Stamp tone="accent">Owner</Stamp>}
-                      <Stamp>{BET_TYPE_META[board.betType].label}</Stamp>
-                      {status && (
-                        <Stamp
-                          tone={
-                            status.state === 'decided'
-                              ? 'decided'
-                              : status.state === 'locked'
-                                ? 'locked'
-                                : 'open'
-                          }
-                        >
-                          {status.state}
-                        </Stamp>
+                <div className="flex flex-col gap-2 rounded-[12px] border border-border bg-surface-1 p-4 hover:border-accent transition-colors">
+                  <Link href={`/board/${board.id}`} className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-bold text-text-primary">{board.name}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {board.role === 'owner' && <Stamp tone="accent">Owner</Stamp>}
+                        <Stamp>{BET_TYPE_META[board.betType].label}</Stamp>
+                        {status && (
+                          <Stamp
+                            tone={
+                              status.state === 'decided'
+                                ? 'decided'
+                                : status.state === 'locked'
+                                  ? 'locked'
+                                  : 'open'
+                            }
+                          >
+                            {status.state}
+                          </Stamp>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-sm text-text-secondary">{board.subject}</p>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs text-text-muted">
+                        <span className="font-mono">{board.memberCount}</span>{' '}
+                        {board.memberCount === 1 ? 'player' : 'players'} · locks{' '}
+                        <span className="font-mono">{formatMinutes(board.lockTimeMinutes)}</span>
+                      </p>
+                      {status?.state === 'open' && status.hasBet && (
+                        <span className="text-xs font-semibold text-success">✓ Bet placed</span>
                       )}
                     </div>
-                  </div>
-                  <p className="text-sm text-text-secondary">{board.subject}</p>
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs text-text-muted">
-                      <span className="font-mono">{board.memberCount}</span>{' '}
-                      {board.memberCount === 1 ? 'player' : 'players'} · locks{' '}
-                      <span className="font-mono">{formatMinutes(board.lockTimeMinutes)}</span>
-                    </p>
-                    {status?.state === 'open' &&
-                      (status.hasBet ? (
-                        <span className="text-xs font-semibold text-success">✓ Bet placed</span>
-                      ) : (
-                        <span className="text-xs font-bold text-accent-deep">Bet now →</span>
-                      ))}
-                  </div>
-                </Link>
+                  </Link>
+                  {/* Inline quick-bet: the daily action, one tap from home. */}
+                  {status?.state === 'open' && !status.hasBet && (
+                    <div className="border-t border-border pt-3">
+                      <BetForm
+                        boardId={board.id}
+                        betType={board.betType}
+                        unitLabel={board.unitLabel}
+                        myBetValue={null}
+                      />
+                    </div>
+                  )}
+                </div>
               </li>
             )
           })}

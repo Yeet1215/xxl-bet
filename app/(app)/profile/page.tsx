@@ -7,6 +7,7 @@ import { getScoredBetsForUser } from '@/lib/queries/stats'
 import { deriveBoardStats } from '@/lib/stats'
 import { formatBetValue, formatRoundDate } from '@/lib/utils/format'
 import { Stamp } from '@/components/ui/stamp'
+import { AccountSettings } from '@/components/profile/account-settings'
 
 export const metadata: Metadata = { title: 'Profile — XXL Bet' }
 
@@ -129,6 +130,8 @@ export default async function ProfilePage() {
           </ul>
         </section>
       )}
+
+      <AccountSettings displayName={user.displayName} email={user.email} />
 
       {history.length > 0 && (
         <section className="flex flex-col gap-3">

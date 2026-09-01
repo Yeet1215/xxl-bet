@@ -4,6 +4,7 @@ import { randomBytes } from 'crypto'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { and, eq } from 'drizzle-orm'
+import { z } from 'zod'
 
 import { db } from '@/lib/db'
 import { boards, boardMembers } from '@/lib/db/schema'
@@ -190,4 +191,98 @@ export async function updateBoardSettings(
   revalidatePath(`/board/${boardId}`)
   revalidatePath(`/board/${boardId}/settings`)
   return { ok: true }
+}
+
+const uuidSchema = z.string().uuid()
+
+// Member leaves a board. The owner can't leave their own board (transfer or
+// delete would be its own feature). Historical bets stay — decided rounds
+// still show the name; rejoining via code restores leaderboard presence.
+export async function leaveBoard(rawBoardId: unknown): Promise<{ error?: string }> {
+  const user = await requireUser()
+
+  const parsedId = uuidSchema.safeParse(rawBoardId)
+  if (!parsedId.success) return { error: 'Board not found' }
+  const boardId = parsedId.data
+
+  const [board] = await db
+    .select({ ownerId: boards.ownerId })
+    .from(boards)
+    .where(eq(boards.id, boardId))
+    .limit(1)
+  if (!board) return { error: 'Board not found' }
+  if (board.ownerId === user.id) {
+    return { error: 'Owners can’t leave their own board' }
+  }
+
+  await db
+    .delete(boardMembers)
+    .where(and(eq(boardMembers.boardId, boardId), eq(boardMembers.userId, user.id)))
+
+  revalidatePath('/')
+  redirect('/')
+}
+
+// Owner removes a member (never themselves — the owner row is the board's
+// anchor). Same history semantics as leaving.
+export async function kickMember(
+  rawBoardId: unknown,
+  rawUserId: unknown,
+): Promise<{ error?: string }> {
+  const user = await requireUser()
+
+  const parsedBoard = uuidSchema.safeParse(rawBoardId)
+  const parsedUser = uuidSchema.safeParse(rawUserId)
+  if (!parsedBoard.success || !parsedUser.success) return { error: 'Not found' }
+  if (parsedUser.data === user.id) return { error: 'You can’t remove yourself' }
+
+  // Ownership check in the WHERE via the boards subcondition.
+  const [board] = await db
+    .select({ id: boards.id })
+    .from(boards)
+    .where(and(eq(boards.id, parsedBoard.data), eq(boards.ownerId, user.id)))
+    .limit(1)
+  if (!board) return { error: 'Board not found' }
+
+  const removed = await db
+    .delete(boardMembers)
+    .where(
+      and(
+        eq(boardMembers.boardId, board.id),
+        eq(boardMembers.userId, parsedUser.data),
+        eq(boardMembers.role, 'member'),
+      ),
+    )
+    .returning({ id: boardMembers.id })
+  if (removed.length === 0) return { error: 'Member not found' }
+
+  revalidatePath(`/board/${board.id}`)
+  revalidatePath(`/board/${board.id}/settings`)
+  return {}
+}
+
+// Owner rotates the invite code — the old one dies instantly.
+export async function regenerateInviteCode(rawBoardId: unknown): Promise<{ error?: string }> {
+  const user = await requireUser()
+
+  const parsedId = uuidSchema.safeParse(rawBoardId)
+  if (!parsedId.success) return { error: 'Board not found' }
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const updated = await db
+        .update(boards)
+        .set({ inviteCode: generateInviteCode() })
+        .where(and(eq(boards.id, parsedId.data), eq(boards.ownerId, user.id)))
+        .returning({ id: boards.id })
+      if (updated.length === 0) return { error: 'Board not found' }
+      revalidatePath(`/board/${updated[0].id}`)
+      revalidatePath(`/board/${updated[0].id}/settings`)
+      return {}
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      if (!message.includes('boards_invite_code_unique')) throw err
+    }
+  }
+  return { error: 'Could not generate a new code — try again' }
 }

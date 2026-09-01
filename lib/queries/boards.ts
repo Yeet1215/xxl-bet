@@ -12,6 +12,7 @@ export async function getBoardsForUser(userId: string) {
       name: boards.name,
       subject: boards.subject,
       betType: boards.betType,
+      unitLabel: boards.unitLabel,
       lockTimeMinutes: boards.lockTimeMinutes,
       timezone: boards.timezone,
       role: boardMembers.role,

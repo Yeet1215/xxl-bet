@@ -16,6 +16,7 @@ import { BET_TYPE_META } from '@/lib/constants/bet-types'
 import { Stamp } from '@/components/ui/stamp'
 import { ButtonLink } from '@/components/ui/button-link'
 import { InviteCode } from '@/components/boards/invite-code'
+import { LeaveBoardButton } from '@/components/boards/membership-buttons'
 import { TodayRound } from '@/components/boards/today-round'
 import { DecideForm } from '@/components/boards/decide-form'
 import { DecideRequests } from '@/components/boards/decide-requests'
@@ -149,6 +150,12 @@ export default async function BoardPage({ params }: PageProps<'/board/[id]'>) {
         </h2>
         <InviteCode code={board.inviteCode} />
       </section>
+
+      {!isOwner && (
+        <div className="flex justify-center">
+          <LeaveBoardButton boardId={board.id} />
+        </div>
+      )}
     </div>
   )
 }

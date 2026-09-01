@@ -65,5 +65,7 @@ export async function placeBet(
     })
 
   revalidatePath(`/board/${board.id}`)
+  // The dashboard shows today-status + quick-bet — flip its stamp too.
+  revalidatePath('/')
   return { ok: true }
 }
