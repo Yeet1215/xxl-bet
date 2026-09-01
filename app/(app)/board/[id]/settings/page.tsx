@@ -11,6 +11,7 @@ import {
   KickMemberButton,
   RegenerateCodeButton,
 } from '@/components/boards/membership-buttons'
+import { DeleteBoardForm } from '@/components/boards/delete-board-form'
 
 export const metadata: Metadata = { title: 'Board settings — XXL Bet' }
 
@@ -84,6 +85,8 @@ export default async function BoardSettingsPage({
           invite code (rotate it first if that&apos;s the point).
         </p>
       </section>
+
+      <DeleteBoardForm boardId={row.board.id} boardName={row.board.name} />
     </div>
   )
 }

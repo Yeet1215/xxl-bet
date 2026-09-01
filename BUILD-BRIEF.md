@@ -45,6 +45,7 @@ outcomes with an audit trail).
 | **Decide** round / approve or deny requests | ❌ | ✅ |
 | Re-decide (fix a wrong outcome) | ❌ | ✅ anytime (scores recompute; audit via decidedAt/decidedById — relaxed from "same day" in chunk 4: owner is trusted at office scale) |
 | Edit board settings, regenerate invite code | ❌ | ✅ |
+| Delete board (typed-name confirm; cascades ALL history) | ❌ | ✅ |
 
 Accounts: open registration (username + password). Boards joined via invite code.
 

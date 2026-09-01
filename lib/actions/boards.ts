@@ -286,3 +286,42 @@ export async function regenerateInviteCode(rawBoardId: unknown): Promise<{ error
   }
   return { error: 'Could not generate a new code — try again' }
 }
+
+// Owner deletes the board — PERMANENT: cascades rounds, bets, decide
+// requests, memberships, hall of fame, everything. The typed board name is
+// the confirmation (re-verified server-side; the UI gate alone is not trust).
+export async function deleteBoard(
+  _prev: BoardActionState,
+  formData: FormData,
+): Promise<BoardActionState> {
+  const user = await requireUser()
+
+  const parsed = z
+    .object({
+      boardId: z.string().uuid(),
+      confirmName: z.string().min(1, 'Type the board name to confirm'),
+    })
+    .safeParse({
+      boardId: formData.get('boardId'),
+      confirmName: formData.get('confirmName'),
+    })
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
+  }
+  const { boardId, confirmName } = parsed.data
+
+  const [board] = await db
+    .select({ id: boards.id, name: boards.name })
+    .from(boards)
+    .where(and(eq(boards.id, boardId), eq(boards.ownerId, user.id)))
+    .limit(1)
+  if (!board) return { error: 'Board not found' }
+  if (confirmName.trim() !== board.name) {
+    return { error: 'Name doesn’t match — nothing was deleted' }
+  }
+
+  await db.delete(boards).where(and(eq(boards.id, boardId), eq(boards.ownerId, user.id)))
+
+  revalidatePath('/')
+  redirect('/')
+}
