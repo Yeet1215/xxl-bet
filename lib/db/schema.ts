@@ -2,6 +2,7 @@ import {
   boolean,
   date,
   index,
+  integer,
   pgTable,
   smallint,
   text,
@@ -15,9 +16,11 @@ import { sql } from 'drizzle-orm'
 // BUILD-BRIEF.md and must be kept in sync (CLAUDE.md rule #9).
 //
 // Conventions: UUID PKs, explicit onDelete on every FK, index every FK.
-// All bet/outcome times are MINUTES SINCE MIDNIGHT (smallint 0–1439) in the
-// board's timezone — never time/timestamp columns (CLAUDE.md gotcha).
-// rounds.roundDate is a `date` in string mode ('YYYY-MM-DD') — never a JS Date.
+// Bet/outcome values are generic INTEGERS whose meaning depends on the board's
+// betType: 'time' = minutes since midnight (0–1439, board tz — never
+// time/timestamp columns, CLAUDE.md gotcha), 'number' = the number itself,
+// 'yesno' = 1/0. rounds.roundDate is a `date` in string mode ('YYYY-MM-DD') —
+// never a JS Date.
 
 export const users = pgTable(
   'users',
@@ -58,10 +61,20 @@ export const boards = pgTable(
     name: text('name').notNull(),
     // What's being bet on — the board tagline (e.g. "What time does R. arrive?").
     subject: text('subject').notNull(),
+    // What kind of value gets bet. Fixed at creation (changing it would make
+    // historical bets meaningless). 'time'|'number' share the closeness
+    // formula; 'yesno' is right-or-wrong (BUILD-BRIEF → Scoring).
+    betType: text('bet_type', { enum: ['time', 'number', 'yesno'] })
+      .notNull()
+      .default('time'),
+    // Display unit for 'number' boards (e.g. "visits", "minutes"). Null otherwise.
+    unitLabel: text('unit_label'),
     inviteCode: text('invite_code').notNull().unique(),
     // Scoring + lock settings (see BUILD-BRIEF.md → Scoring). Tunable per board.
     lockTimeMinutes: smallint('lock_time_minutes').notNull().default(540), // 09:00
-    windowMinutes: smallint('window_minutes').notNull().default(60),
+    // Closeness window in the board's value units (minutes for 'time', the
+    // number's own units for 'number'; unused for 'yesno').
+    windowSize: integer('window_size').notNull().default(60),
     maxPoints: smallint('max_points').notNull().default(100),
     exactMultiplier: smallint('exact_multiplier').notNull().default(2),
     timezone: text('timezone').notNull().default('Europe/Amsterdam'),
@@ -100,7 +113,7 @@ export const rounds = pgTable(
     roundDate: date('round_date', { mode: 'string' }).notNull(),
     // Decided-state. null outcome = not decided. Lock state is DERIVED from
     // board.lockTimeMinutes + roundDate (never stored — see BUILD-BRIEF).
-    outcomeMinutes: smallint('outcome_minutes'),
+    outcomeValue: integer('outcome_value'),
     decidedAt: timestamp('decided_at', { withTimezone: true }),
     decidedById: uuid('decided_by_id').references(() => users.id, {
       onDelete: 'restrict',
@@ -121,7 +134,7 @@ export const bets = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    betMinutes: smallint('bet_minutes').notNull(),
+    betValue: integer('bet_value').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     // Resolve artifacts — null until the round is decided; recomputed on
@@ -147,7 +160,7 @@ export const decideRequests = pgTable(
     requesterId: uuid('requester_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    proposedOutcomeMinutes: smallint('proposed_outcome_minutes').notNull(),
+    proposedOutcomeValue: integer('proposed_outcome_value').notNull(),
     status: text('status', { enum: ['pending', 'approved', 'denied'] })
       .notNull()
       .default('pending'),

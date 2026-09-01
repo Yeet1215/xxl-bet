@@ -7,13 +7,14 @@ durable **product + data-model reference**. Chunk-by-chunk history: `chunks.md`.
 
 ## What this is
 
-A lighthearted office betting pool ("toto") for **time-based bets**. The
-founding board: every workday, colleagues bet on what time a chronically late
-coworker arrives (official start 09:00; reality 10:15–11:15). Closest bet wins
-the round; a points formula rewards closeness; a leaderboard and per-user stats
-accumulate the season. Built generic from day one: a *board* is any recurring
-time bet (arrival time now; "total toilet time per day" later — same mechanics,
-different subject line).
+A lighthearted office betting pool ("toto") for recurring bets. The founding
+board: every workday, colleagues bet on what time a chronically late coworker
+arrives (official start 09:00; reality 10:15–11:15). Closest bet wins the
+round; a points formula rewards closeness; a leaderboard and per-user stats
+accumulate the season. Every board has a **bet type**, fixed at creation
+(chunk 2): **time** (a time of day), **number** (any integer — visits,
+minutes on the toilet, whatever; optional unit label), or **yes/no**. Time and
+number share the closeness formula; yes/no is right-or-wrong.
 
 **Tone:** it's a joke between colleagues — copy can wink (see `DESIGN.md`), but
 the mechanics are fair and tamper-proof (hidden bets, lock times, owner-decided
@@ -25,9 +26,9 @@ outcomes with an audit trail).
 
 | Term | Meaning |
 |---|---|
-| **Board** | One competition/leaderboard (e.g. "Arrival time of R."). Has an owner, members, settings, an invite code. |
+| **Board** | One competition/leaderboard (e.g. "Arrival time of R."). Has an owner, members, settings, an invite code, and a **bet type** (`time`/`number`/`yesno`, fixed at creation). |
 | **Round** | One betting instance on a board — for v1 always a calendar date (one round per day). |
-| **Bet** | One member's guess for a round: a time-of-day. One bet per member per round, editable until lock. |
+| **Bet** | One member's guess for a round: a **value** whose meaning follows the board's bet type (time = minutes since midnight, number = the integer, yesno = 1/0). One bet per member per round, editable until lock. |
 | **Lock** | The per-board time of day after which bets can't be placed/edited and all bets become visible. Before lock, bets are **hidden** (you only see *who* has bet, not *what*). |
 | **Outcome** | The actual observed time (e.g. he walked in at 10:15). Generic word — never "arrival time" in shared code/UI components. |
 | **Decide** | Resolving a round by setting its outcome → scores computed. Owner-only. |
@@ -49,18 +50,21 @@ Accounts: open registration (username + password). Boards joined via invite code
 
 ---
 
-## Scoring (locked 2026-09-01)
+## Scoring (locked 2026-09-01; generalized to bet types in chunk 2)
 
 Per-board settings (stored on the board, tunable without code changes):
-`maxPoints` = 100 · `windowMinutes` = 60 · `exactMultiplier` = 2 · `lockTime` = 09:00 · `timezone` = Europe/Amsterdam
+`maxPoints` = 100 · `windowSize` = 60 (in the board's value units) · `exactMultiplier` = 2 · `lockTime` = 09:00 · `timezone` = Europe/Amsterdam
 
-For each bet in a decided round, with `diff = |bet − outcome|` in minutes:
+**`time` and `number` boards** — for each bet in a decided round, with
+`diff = |bet − outcome|` (minutes for time, plain units for number):
 
-1. **Base:** `diff > windowMinutes` → 0, else `round(maxPoints × (1 − diff / windowMinutes))`.
+1. **Base:** `diff > windowSize` → 0, else `round(maxPoints × (1 − diff / windowSize))`.
 2. **Closest bonus:** the bet(s) with the smallest `diff` get the full `maxPoints` (even if outside the window). Ties: all tied bets get it.
 3. **Exact hit:** `diff === 0` → `maxPoints × exactMultiplier` (beats rule 2).
 
 Examples (defaults): exact → 200 · closest at 7 min off → 100 · second-closest 12 min off → 80 · off by 30 → 50 · off by 59 → 2 · off by 75 and not closest → 0.
+
+**`yesno` boards** — right-or-wrong: correct → `maxPoints` (isExact = true), wrong → 0. `windowSize`/`exactMultiplier` unused (hidden in the UI).
 
 Scoring is a **pure function** (`lib/scoring.ts`, chunk 4): `(bets, outcome, settings) → scores`. Deterministic + idempotent, so re-deciding a round just recomputes. Unit-test this one file properly — it's the money logic.
 
@@ -88,13 +92,13 @@ DECIDED  outcome + decidedAt/decidedBy set · scores computed & stored on bets
 
 - **users** — `id`, `username` (unique, lower-indexed), `displayName`, `passwordHash`, `createdAt`.
 - **sessions** — fitapp pattern: `id`, `userId`, `tokenHash` (sha256), `expiresAt` (30-day rolling), `createdAt`.
-- **boards** — `id`, `ownerId` FK, `name`, `subject` (what's being bet on, shown as the board tagline), `inviteCode` (unique), `lockTimeMinutes` (smallint, default 540 = 09:00), `windowMinutes` (default 60), `maxPoints` (default 100), `exactMultiplier` (default 2), `timezone` (default `Europe/Amsterdam`), `createdAt`.
+- **boards** — `id`, `ownerId` FK, `name`, `subject` (what's being bet on, shown as the board tagline), `betType` (`time`/`number`/`yesno`, fixed at creation), `unitLabel` (nullable; number boards only), `inviteCode` (unique, 8 chars A–Z/2–9 minus lookalikes, visible to all members), `lockTimeMinutes` (smallint, default 540 = 09:00), `windowSize` (integer, default 60, in value units), `maxPoints` (default 100), `exactMultiplier` (default 2), `timezone` (default `Europe/Amsterdam`), `createdAt`.
 - **board_members** — `boardId`, `userId`, `role` (`owner`/`member`), `joinedAt`; unique `(boardId, userId)`.
-- **rounds** — `id`, `boardId`, `roundDate` (`date`, in board tz); unique `(boardId, roundDate)`. Decided-state: `outcomeMinutes` (smallint, nullable — null = not decided), `decidedAt`, `decidedById`.
-- **bets** — `id`, `roundId`, `userId`, `betMinutes` (smallint 0–1439), `createdAt`, `updatedAt`; unique `(roundId, userId)`. Resolve artifacts (nullable until decided): `score`, `diffMinutes`, `isClosest`, `isExact`.
-- **decide_requests** — `id`, `roundId`, `requesterId`, `proposedOutcomeMinutes`, `status` (`pending`/`approved`/`denied`), `createdAt`, `reviewedAt`, `reviewedById`. One *pending* request per (round, requester).
+- **rounds** — `id`, `boardId`, `roundDate` (`date`, in board tz); unique `(boardId, roundDate)`. Decided-state: `outcomeValue` (integer, nullable — null = not decided), `decidedAt`, `decidedById`.
+- **bets** — `id`, `roundId`, `userId`, `betValue` (integer, meaning per board betType), `createdAt`, `updatedAt`; unique `(roundId, userId)`. Resolve artifacts (nullable until decided): `score`, `diffMinutes` (naming kept; holds the generic value diff), `isClosest`, `isExact`.
+- **decide_requests** — `id`, `roundId`, `requesterId`, `proposedOutcomeValue` (integer), `status` (`pending`/`approved`/`denied`), `createdAt`, `reviewedAt`, `reviewedById`. One *pending* request per (round, requester).
 
-Conventions: UUID PKs, FK indexes, explicit `onDelete` (board cascade → rounds → bets/requests; user delete = restrict for now — revisit if ever needed). **All bet/outcome times are minutes-since-midnight smallints** (see CLAUDE.md gotcha).
+Conventions: UUID PKs, FK indexes, explicit `onDelete` (board cascade → rounds → bets/requests; user delete = restrict for now — revisit if ever needed). **All bet/outcome values are generic integers interpreted via the board's betType** — time = minutes since midnight (see CLAUDE.md gotcha), number = the integer itself, yesno = 1/0.
 
 ## Leaderboard & stats (chunk 5)
 
@@ -114,4 +118,4 @@ Deferred (tracked in `chunks.md`): count-based bets (times per day), multiple be
 
 ---
 
-**Last Updated:** 2026-09-01 (Initial brief: concept, glossary, roles, scoring formula, round lifecycle, data model, surfaces. Decisions locked with owner: name "XXL Bet", lock+hidden bets, scoring defaults 100/60min/2×, open registration + invite codes, generic "decide/outcome" terminology.)
+**Last Updated:** 2026-09-01 (Chunk 2: bet types added — boards carry `betType` time/number/yesno + `unitLabel`; bet/outcome columns generalized to integers (`betValue`/`outcomeValue`/`proposedOutcomeValue`, `windowSize`); scoring spec split per type. Earlier same day: initial brief — concept, glossary, roles, scoring formula, round lifecycle, data model, surfaces; decisions locked with owner: name "XXL Bet", lock+hidden bets, scoring defaults 100/60min/2×, open registration + invite codes, generic "decide/outcome" terminology.)

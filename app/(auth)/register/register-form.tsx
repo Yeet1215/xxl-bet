@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef } from 'react'
 
 import { registerUser, type AuthActionState } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/button'
-import { Field } from '@/components/auth/field'
+import { Field } from '@/components/ui/field'
 import { useToast } from '@/components/ui/toast'
 
 export function RegisterForm() {

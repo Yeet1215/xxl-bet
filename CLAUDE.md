@@ -109,7 +109,7 @@ Library rule: prefer the simpler API; one-line justification per new dependency 
 - **File layout:** `lib/{db,auth,actions,queries,validators,constants,utils}` + `components/{ui,<feature>}/`. One component per file. `lib/db/schema.ts` is the single source of truth.
 - **Naming:** server actions `verbCamelCase` (`placeBet`, `decideRound`); DB `snake_case` ↔ TS `camelCase` via Drizzle.
 - **DB:** UUID PKs, explicit FK `onDelete`, index every FK, every user-owned row has `userId` (or reaches one via its board/round FK chain).
-- **Times as integers:** bet times and outcomes are **minutes since midnight (`smallint`, 0–1439)** in the board's timezone — never `time`/`timestamp` columns for the betting values. Diff math and scoring stay integer-pure; format to `HH:MM` only at the UI edge.
+- **Bet values as integers:** `bets.betValue` / `rounds.outcomeValue` are generic **integers** whose meaning follows the board's `betType` — `time` = minutes since midnight (0–1439, board tz; never `time`/`timestamp` columns), `number` = the integer itself, `yesno` = 1/0. Diff math and scoring stay integer-pure; format (`HH:MM`, unit label, Yes/No) only at the UI edge.
 - **Don'ts:** ❌ `// TODO` without a chunk/issue note. ❌ state libraries. ❌ date libraries (Intl + the minutes-integer convention cover this app; see gotchas).
 
 ---
@@ -149,4 +149,4 @@ bug-driven rules to this list as they're earned.
 ---
 
 **Version:** 2026-Q3
-**Last Updated:** 2026-09-01 (Chunk 1 complete: migration `0000` (7 tables, verified applied), fitapp-pattern session auth (`xxlbet_session`), `lib/utils/tz.ts`, UI primitives (Button/Stamp/Toast/Field), `(auth)`+`(app)` route groups, db scripts + `prebuild` migrate. Prod build green. Rate limiting deliberately deferred — see watchlist. — Chunk 0: scaffold + doc set.)
+**Last Updated:** 2026-09-01 (Chunk 2 complete: bet types (time/number/yesno) — migrations `0001`/`0002` generalize value columns to integers; boards create/join/settings + dashboard; Field moved to `components/ui/`; ButtonLink added. "Bet values as integers" standard updated. — Chunk 1: migration `0000`, session auth, tz helper, UI primitives, route groups. — Chunk 0: scaffold + doc set.)

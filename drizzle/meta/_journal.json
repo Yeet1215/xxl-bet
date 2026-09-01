@@ -8,6 +8,20 @@
       "when": 1788254129878,
       "tag": "0000_tired_thena",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788255320140,
+      "tag": "0001_aspiring_scalphunter",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788255352296,
+      "tag": "0002_fresh_tigra",
+      "breakpoints": true
     }
   ]
 }
