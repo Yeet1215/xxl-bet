@@ -25,7 +25,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      {/* suppressHydrationWarning: browser extensions (ColorZilla, Grammarly,
+          password managers) inject attributes into <body> before hydration and
+          trigger dev-only mismatch warnings. Scoped to this element's
+          attributes only — children still hydrate strictly. */}
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
