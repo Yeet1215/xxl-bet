@@ -148,4 +148,4 @@ bug-driven rules to this list as they're earned.
 ---
 
 **Version:** 2026-Q3
-**Last Updated:** 2026-09-01 (Chunk 0: project scaffolded — Next 16.3.3 / React 19.2.8 / Tailwind 4.3 / Drizzle 0.45 + Neon deps, light-theme tokens in `globals.css`, doc set created, git on `master`. No app code yet.)
+**Last Updated:** 2026-09-01 (Chunk 1 complete: migration `0000` (7 tables, verified applied), fitapp-pattern session auth (`xxlbet_session`), `lib/utils/tz.ts`, UI primitives (Button/Stamp/Toast/Field), `(auth)`+`(app)` route groups, db scripts + `prebuild` migrate. Prod build green. Rate limiting deliberately deferred — see watchlist. — Chunk 0: scaffold + doc set.)
