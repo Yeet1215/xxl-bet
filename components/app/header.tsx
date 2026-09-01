@@ -21,7 +21,7 @@ export function Header({ user }: { user: User }) {
           </Link>
           <Link
             href="/profile"
-            className="px-3 py-2 rounded-[10px] text-text-secondary hover:text-text-primary hover:bg-surface-1 transition-colors"
+            className="px-3 py-2 rounded-[10px] text-text-secondary hover:text-text-primary hover:bg-surface-1 transition-colors max-w-[16ch] truncate"
           >
             {user.displayName}
           </Link>

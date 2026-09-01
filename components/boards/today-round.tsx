@@ -7,6 +7,7 @@ import { BetForm } from '@/components/boards/bet-form'
 import { DecideForm } from '@/components/boards/decide-form'
 import { RequestDecideForm } from '@/components/boards/request-decide-form'
 import { DecideRequests } from '@/components/boards/decide-requests'
+import { ExactConfetti } from '@/components/boards/exact-confetti'
 
 type PendingRequest = {
   id: string
@@ -57,6 +58,9 @@ export function TodayRound({
 
   return (
     <section className="rounded-[12px] border border-border bg-surface-1 p-4 flex flex-col gap-4">
+      {decided && sorted.some((bet) => bet.isExact) && (
+        <ExactConfetti roundKey={`${board.id}:${roundDate}`} />
+      )}
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-sm font-bold text-text-primary">
           Today · {formatRoundDate(roundDate)}
