@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 
 import { getCurrentUser } from '@/lib/auth/session'
 import { getBoardForUser } from '@/lib/queries/boards'
-import { getBoardLeaderboard } from '@/lib/queries/stats'
+import { getBoardLeaderboard, getSeasonWinners } from '@/lib/queries/stats'
 import {
   getMyPendingDecideRequest,
   getPendingDecideRequests,
@@ -21,7 +21,7 @@ import { TodayRound } from '@/components/boards/today-round'
 import { DecideForm } from '@/components/boards/decide-form'
 import { DecideRequests } from '@/components/boards/decide-requests'
 import { RequestDecideForm } from '@/components/boards/request-decide-form'
-import { Leaderboard } from '@/components/boards/leaderboard'
+import { LeaderboardTabs } from '@/components/boards/leaderboard-tabs'
 
 export default async function BoardPage({ params }: PageProps<'/board/[id]'>) {
   const user = await getCurrentUser()
@@ -34,7 +34,17 @@ export default async function BoardPage({ params }: PageProps<'/board/[id]'>) {
   const { board, membership } = row
   const isOwner = membership.role === 'owner'
 
-  const leaderboard = await getBoardLeaderboard(board.id)
+  // Season = calendar month in board tz, derived purely from round dates.
+  const seasonMonth = todayInTz(board.timezone).slice(0, 7)
+  const [seasonLeaderboard, allTimeLeaderboard, hallOfFame] = await Promise.all([
+    getBoardLeaderboard(board.id, seasonMonth),
+    getBoardLeaderboard(board.id),
+    getSeasonWinners(board.id, seasonMonth),
+  ])
+  const seasonLabel = new Intl.DateTimeFormat('en-GB', {
+    month: 'long',
+    timeZone: 'UTC',
+  }).format(new Date(`${seasonMonth}-01T00:00:00Z`))
 
   // Lock state is derived in the board's timezone — never stored (BUILD-BRIEF).
   const roundDate = todayInTz(board.timezone)
@@ -139,10 +149,42 @@ export default async function BoardPage({ params }: PageProps<'/board/[id]'>) {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-bold uppercase tracking-[0.06em] text-text-muted">
-          Leaderboard (<span className="font-mono">{leaderboard.length}</span>)
+          Leaderboard (<span className="font-mono">{allTimeLeaderboard.length}</span>)
         </h2>
-        <Leaderboard rows={leaderboard} viewerId={user.id} />
+        <LeaderboardTabs
+          seasonLabel={seasonLabel}
+          seasonRows={seasonLeaderboard}
+          allTimeRows={allTimeLeaderboard}
+          viewerId={user.id}
+        />
       </section>
+
+      {hallOfFame.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-bold uppercase tracking-[0.06em] text-text-muted">
+            Hall of Fame
+          </h2>
+          <ul className="rounded-[12px] border border-border bg-surface-1 divide-y divide-border">
+            {hallOfFame.map((season) => (
+              <li key={season.month} className="flex items-center gap-3 px-4 py-3">
+                <span aria-hidden>🏆</span>
+                <span className="flex-1 min-w-0 text-sm">
+                  <span className="font-semibold">{season.winners.join(' & ')}</span>{' '}
+                  <span className="text-text-muted">
+                    ·{' '}
+                    {new Intl.DateTimeFormat('en-GB', {
+                      month: 'long',
+                      year: 'numeric',
+                      timeZone: 'UTC',
+                    }).format(new Date(`${season.month}-01T00:00:00Z`))}
+                  </span>
+                </span>
+                <span className="font-mono text-sm font-bold shrink-0">{season.points}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-bold uppercase tracking-[0.06em] text-text-muted">

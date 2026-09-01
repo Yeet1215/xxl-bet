@@ -110,13 +110,14 @@ Conventions: UUID PKs, FK indexes, explicit `onDelete` (board cascade → rounds
 ## Surfaces (v1 as shipped)
 
 1. `/login`, `/register` (email required), `/forgot-password`, `/reset-password/[token]`.
-2. `/` (dashboard) — your boards with live today-status (open/locked/decided + bet-placed indicator + "Bet now →"), create/join board. *(Inline quick-bet from the dashboard: V2 roadmap.)*
-3. `/board/[id]` — today's round (bet input before lock; revealed bets after lock; scored results + next-round countdown once decided), "Waiting for a result" past-round decide/request lists, leaderboard, invite code. *(Browsable past-round results ("recent rounds"): V2 roadmap.)*
+2. `/` (dashboard) — your boards with live today-status (open/locked/decided + bet-placed indicator) and **inline quick-bet** on open-and-unbet boards (chunk 8), create/join board.
+3. `/board/[id]` — today's round (bet input before lock; revealed bets after lock; scored results + next-round countdown once decided), "Waiting for a result" past-round decide/request lists, leaderboard with **[Season | All-time] toggle** (season = calendar month in board tz, chunk 9), **Hall of Fame** (past monthly winners), invite code, leave-board (members). *(Browsable past-round results ("recent rounds"): V2 roadmap.)*
 4. `/board/[id]/settings` — owner: name/subject/lock/scoring settings (bet type immutable; lock can't be extended past today's reveal).
-5. `/profile` — own stats + streaks + bet history.
+5. `/profile` — own stats + streaks + bet history + Account section (display name, email, password — chunk 8).
+4b. `/board/[id]/settings` also: members list with kick + invite-code rotation (chunk 8).
 
 Deferred (tracked in `chunks.md`): count-based bets (times per day), multiple bet subjects per board, notifications, PWA, season resets, badges.
 
 ---
 
-**Last Updated:** 2026-09-01 (Chunk 7: users.email + password_reset_tokens; surfaces updated to as-shipped (quick-bet + recent-rounds moved to V2 roadmap); yesno isExact=false; cascade wording fixed to match schema; lock-extension anti-peek rule. Chunk 4: re-decide relaxed to anytime-by-owner. Chunk 2: bet types added — boards carry `betType` time/number/yesno + `unitLabel`; bet/outcome columns generalized to integers (`betValue`/`outcomeValue`/`proposedOutcomeValue`, `windowSize`); scoring spec split per type. Earlier same day: initial brief — concept, glossary, roles, scoring formula, round lifecycle, data model, surfaces; decisions locked with owner: name "XXL Bet", lock+hidden bets, scoring defaults 100/60min/2×, open registration + invite codes, generic "decide/outcome" terminology.)
+**Last Updated:** 2026-09-01 (Chunks 8–9: account section, membership management, dashboard quick-bet, monthly seasons + Hall of Fame — surfaces updated. Chunk 7: users.email + password_reset_tokens; surfaces updated to as-shipped (quick-bet + recent-rounds moved to V2 roadmap); yesno isExact=false; cascade wording fixed to match schema; lock-extension anti-peek rule. Chunk 4: re-decide relaxed to anytime-by-owner. Chunk 2: bet types added — boards carry `betType` time/number/yesno + `unitLabel`; bet/outcome columns generalized to integers (`betValue`/`outcomeValue`/`proposedOutcomeValue`, `windowSize`); scoring spec split per type. Earlier same day: initial brief — concept, glossary, roles, scoring formula, round lifecycle, data model, surfaces; decisions locked with owner: name "XXL Bet", lock+hidden bets, scoring defaults 100/60min/2×, open registration + invite codes, generic "decide/outcome" terminology.)
