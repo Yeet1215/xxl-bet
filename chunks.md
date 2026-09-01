@@ -17,9 +17,10 @@
 
 - **3 — Rounds & betting (2026-09-01).** No migration. `placeBet` action: Zod boardId → membership check → lock check (derived, board-tz via `nowMinutesInTz`) → value parsed by the BOARD's betType (client never picks the type) → lazy round creation (`onConflictDoNothing` on the (boardId, roundDate) unique index — concurrent first-bets safe) → bet upsert on (roundId, userId); guards decided rounds already (chunk-4 early-decide-proof). `<TodayRound>` card on the board page: OPEN (typed `<BetForm>`: time picker / number+unit / yes-no state-driven buttons + hidden input; who-has-bet list with values hidden as ••• except your own) ↔ LOCKED (full reveal, sorted by value). `lib/utils/format.ts` (`formatBetValue` type-aware, `formatRoundDate` UTC-pure). Copy voice per DESIGN ("No bets yet. Scared?").
 
+- **4 — Deciding & scoring (2026-09-01).** No migration. **`lib/scoring.ts`** pure engine + **first test infra** (vitest, `pnpm test`, 9 tests = executable BUILD-BRIEF spec): time/number closeness (linear decay, closest→max incl. ties + outside-window, exact→×multiplier) and yesno right-or-wrong (multiplier deliberately ignored). **Decide flows:** `decideRound` (owner; works pre-lock = "close the bet early"; re-decide ANYTIME recomputes — BUILD-BRIEF's same-day rule relaxed, doc updated), `submitDecideRequest` (member, post-lock, one pending each, resubmit updates), `approveDecideRequest`/`denyDecideRequest` (ownership via request→round→board join; deciding auto-denies remaining pending). `ensureRound` shared helper (bets + decide + requests all lazy-create). **UI:** round card gains DECIDED state (outcome stamp, results ranked by score, `±diff`, `+points`, closest = accent-soft + "Closest", exact = success-soft + "Clairvoyant"), owner decide form + request queue, member request form, owner "Fix outcome" re-decide disclosure, owner "Waiting for a result" list for past undecided rounds (14 cap). Shared `<ValueInput>` (time/number/yesno) extracted — BetForm/DecideForm/RequestDecideForm. Confetti-on-exact deferred to chunk 6 polish.
+
 ## Planned
 
-- **4 — Deciding & scoring.** `lib/scoring.ts` pure function + unit tests (vitest — first test infra); type-aware (closeness for time/number, right-or-wrong for yesno); owner "Decide bet" (outcome input); member "Request to decide" + owner approve/deny queue; score computation + stored resolve artifacts; decided-round results view (diffs, closest, exact, confetti-on-exact).
 - **5 — Leaderboard & profile.** Board leaderboard (points, wins, exacts), profile stats (avg diff, streaks) + bet history.
 - **6 — Polish pass.** Empty states, copy/voice pass, mobile ergonomics, seed the founding board, invite the colleagues. 🎉
 
@@ -42,4 +43,4 @@
 
 ---
 
-**Last Updated:** 2026-09-01 (Chunks 0–3 shipped: scaffold, foundations, boards + bet types, rounds & betting (lazy rounds, typed bet inputs, hidden-until-lock reveal). Chunks 4–6 planned.)
+**Last Updated:** 2026-09-01 (Chunks 0–4 shipped: scaffold, foundations, boards + bet types, rounds & betting, deciding & scoring (pure engine + vitest, decide/request/approve flows, results view). Chunks 5–6 planned.)

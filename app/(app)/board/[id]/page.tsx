@@ -2,13 +2,20 @@ import { notFound, redirect } from 'next/navigation'
 
 import { getCurrentUser } from '@/lib/auth/session'
 import { getBoardForUser, getBoardMembers } from '@/lib/queries/boards'
-import { getRoundWithBets } from '@/lib/queries/rounds'
+import {
+  getMyPendingDecideRequest,
+  getPendingDecideRequests,
+  getRoundWithBets,
+  getUndecidedPastRounds,
+} from '@/lib/queries/rounds'
 import { formatMinutes, nowMinutesInTz, todayInTz } from '@/lib/utils/tz'
+import { formatRoundDate } from '@/lib/utils/format'
 import { BET_TYPE_META } from '@/lib/constants/bet-types'
 import { Stamp } from '@/components/ui/stamp'
 import { ButtonLink } from '@/components/ui/button-link'
 import { InviteCode } from '@/components/boards/invite-code'
 import { TodayRound } from '@/components/boards/today-round'
+import { DecideForm } from '@/components/boards/decide-form'
 
 export default async function BoardPage({ params }: PageProps<'/board/[id]'>) {
   const user = await getCurrentUser()
@@ -26,7 +33,16 @@ export default async function BoardPage({ params }: PageProps<'/board/[id]'>) {
   // Lock state is derived in the board's timezone — never stored (BUILD-BRIEF).
   const roundDate = todayInTz(board.timezone)
   const locked = nowMinutesInTz(board.timezone) >= board.lockTimeMinutes
-  const { bets: betRows } = await getRoundWithBets(board.id, roundDate)
+  const { round, bets: betRows } = await getRoundWithBets(board.id, roundDate)
+
+  const roundUndecided = round !== null && round.outcomeValue === null
+  const pendingRequests =
+    isOwner && roundUndecided ? await getPendingDecideRequests(round.id) : []
+  const myPendingValue =
+    !isOwner && roundUndecided
+      ? ((await getMyPendingDecideRequest(round.id, user.id))?.proposedOutcomeValue ?? null)
+      : null
+  const pastUndecided = isOwner ? await getUndecidedPastRounds(board.id, roundDate) : []
 
   return (
     <div className="flex flex-col gap-6">
@@ -56,9 +72,36 @@ export default async function BoardPage({ params }: PageProps<'/board/[id]'>) {
         board={board}
         roundDate={roundDate}
         locked={locked}
+        round={round}
         betRows={betRows}
         viewerId={user.id}
+        isOwner={isOwner}
+        pendingRequests={pendingRequests}
+        myPendingValue={myPendingValue}
       />
+
+      {pastUndecided.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-bold uppercase tracking-[0.06em] text-text-muted">
+            Waiting for a result
+          </h2>
+          <ul className="rounded-[12px] border border-border bg-surface-1 divide-y divide-border">
+            {pastUndecided.map((pastRound) => (
+              <li key={pastRound.id} className="flex flex-col gap-2 px-4 py-3">
+                <span className="text-sm font-semibold">
+                  {formatRoundDate(pastRound.roundDate)}
+                </span>
+                <DecideForm
+                  boardId={board.id}
+                  roundDate={pastRound.roundDate}
+                  betType={board.betType}
+                  unitLabel={board.unitLabel}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-bold uppercase tracking-[0.06em] text-text-muted">

@@ -149,4 +149,4 @@ bug-driven rules to this list as they're earned.
 ---
 
 **Version:** 2026-Q3
-**Last Updated:** 2026-09-01 (Chunk 3 complete: rounds & betting — lazy round creation, `placeBet` (server-side betType, derived board-tz lock, upsert-until-lock), `<TodayRound>` hidden-until-lock reveal, `lib/utils/format.ts`. No migration. — Chunk 2: bet types + boards CRUD, migrations `0001`/`0002`. — Chunk 1: migration `0000`, session auth, tz helper, UI primitives. — Chunk 0: scaffold + doc set.)
+**Last Updated:** 2026-09-01 (Chunk 4 complete: deciding & scoring — pure `lib/scoring.ts` + vitest (`pnpm test`, first test infra), decide/request/approve/deny actions, DECIDED results view, past-undecided owner list, shared `<ValueInput>`. Re-decide = anytime-by-owner (BUILD-BRIEF updated). No migration. — Chunk 3: rounds & betting. — Chunk 2: bet types + boards CRUD, migrations `0001`/`0002`. — Chunk 1: migration `0000`, auth, tz, primitives. — Chunk 0: scaffold.)

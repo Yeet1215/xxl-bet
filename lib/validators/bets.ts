@@ -22,7 +22,9 @@ const numberValueSchema = z.coerce
   .min(-100_000_000, 'Bet is too small')
   .max(100_000_000, 'Bet is too large')
 
-const yesnoValueSchema = z.enum(['1', '0']).transform((v) => Number(v))
+const yesnoValueSchema = z
+  .enum(['1', '0'], { message: 'Pick Yes or No' })
+  .transform((v) => Number(v))
 
 export function parseBetValue(
   betType: BetType,

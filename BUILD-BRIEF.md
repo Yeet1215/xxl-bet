@@ -43,7 +43,7 @@ outcomes with an audit trail).
 | See all bets after lock | ✅ | ✅ |
 | Submit a **decide request** (after lock) | ✅ | — (owner decides directly) |
 | **Decide** round / approve or deny requests | ❌ | ✅ |
-| Re-decide (fix a wrong outcome, same day) | ❌ | ✅ (scores recompute) |
+| Re-decide (fix a wrong outcome) | ❌ | ✅ anytime (scores recompute; audit via decidedAt/decidedById — relaxed from "same day" in chunk 4: owner is trusted at office scale) |
 | Edit board settings, regenerate invite code | ❌ | ✅ |
 
 Accounts: open registration (username + password). Boards joined via invite code.
@@ -118,4 +118,4 @@ Deferred (tracked in `chunks.md`): count-based bets (times per day), multiple be
 
 ---
 
-**Last Updated:** 2026-09-01 (Chunk 2: bet types added — boards carry `betType` time/number/yesno + `unitLabel`; bet/outcome columns generalized to integers (`betValue`/`outcomeValue`/`proposedOutcomeValue`, `windowSize`); scoring spec split per type. Earlier same day: initial brief — concept, glossary, roles, scoring formula, round lifecycle, data model, surfaces; decisions locked with owner: name "XXL Bet", lock+hidden bets, scoring defaults 100/60min/2×, open registration + invite codes, generic "decide/outcome" terminology.)
+**Last Updated:** 2026-09-01 (Chunk 4: re-decide relaxed to anytime-by-owner. Chunk 2: bet types added — boards carry `betType` time/number/yesno + `unitLabel`; bet/outcome columns generalized to integers (`betValue`/`outcomeValue`/`proposedOutcomeValue`, `windowSize`); scoring spec split per type. Earlier same day: initial brief — concept, glossary, roles, scoring formula, round lifecycle, data model, surfaces; decisions locked with owner: name "XXL Bet", lock+hidden bets, scoring defaults 100/60min/2×, open registration + invite codes, generic "decide/outcome" terminology.)

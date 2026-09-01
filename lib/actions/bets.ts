@@ -1,12 +1,12 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { and, eq } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { bets, rounds } from '@/lib/db/schema'
+import { bets } from '@/lib/db/schema'
 import { requireUser } from '@/lib/auth/session'
 import { getBoardForUser } from '@/lib/queries/boards'
+import { ensureRound } from '@/lib/queries/rounds'
 import { boardIdSchema, parseBetValue } from '@/lib/validators/bets'
 import { nowMinutesInTz, todayInTz } from '@/lib/utils/tz'
 
@@ -44,17 +44,8 @@ export async function placeBet(
 
   const roundDate = todayInTz(board.timezone)
 
-  // Lazy round creation: first bet of the day creates the round. The unique
-  // (boardId, roundDate) index makes concurrent first-bets safe.
-  await db
-    .insert(rounds)
-    .values({ boardId: board.id, roundDate })
-    .onConflictDoNothing()
-  const [round] = await db
-    .select({ id: rounds.id, outcomeValue: rounds.outcomeValue })
-    .from(rounds)
-    .where(and(eq(rounds.boardId, board.id), eq(rounds.roundDate, roundDate)))
-    .limit(1)
+  // Lazy round creation: first bet of the day creates the round.
+  const round = await ensureRound(board.id, roundDate)
   if (!round) {
     return { error: 'Could not open today’s round' }
   }
