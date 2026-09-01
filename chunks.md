@@ -21,9 +21,11 @@
 
 - **5 — Leaderboard & profile (2026-09-01).** No migration. **Leaderboard** replaced the board page's "Players" section (one ranked list, both jobs): all members ranked by points → wins → name, played/wins/exacts subline, top-3 rank accents, zero-pointers at the bottom; `getBoardLeaderboard` = two simple queries merged in JS. **Profile** (`/profile`): overall 4-stat strip (points summed across boards — fun over purity), per-board cards (points, played, wins, exacts, avg miss for time/number vs hit-rate % for yesno, 🔥 current + best win streaks), recent-bets history (last 20: bet → outcome, +points colored by closest/exact). Derivation is a pure unit-tested `lib/stats.ts` (5 tests; streaks are over *played* rounds — skipped days don't break them). Suite now 14 tests.
 
+- **6 — Polish pass (2026-09-01).** No migration. Exact-hit confetti (`<ExactConfetti>` — deterministic CSS pieces, fires only when a decided round contains an exact, once per (board, roundDate) per browser via sessionStorage, DESIGN's "one allowed piece of flash"). Branded `app/not-found.tsx` (bad ids / non-member boards) + `app/error.tsx` (special-cases expired-session UNAUTHENTICATED with a log-in path). `app/icon.svg` favicon (accent square, XB). Header truncates long display names. Empty states audited (already teaching); skeleton loading states deliberately skipped at office scale. **v1 roadmap complete — seed the founding board + invite the office.** 🎉
+
 ## Planned
 
-- **6 — Polish pass.** Empty states, copy/voice pass, mobile ergonomics, seed the founding board, invite the colleagues. 🎉
+*(v1 complete — V2 roadmap being drafted in `.claude-notes/ROADMAP.md`)*
 
 ## Deferred (unscheduled backlog)
 
@@ -44,4 +46,4 @@
 
 ---
 
-**Last Updated:** 2026-09-01 (Chunks 0–5 shipped: scaffold, foundations, boards + bet types, rounds & betting, deciding & scoring, leaderboard & profile (ranked members list, per-board stats + streaks, bet history). Chunk 6 planned.)
+**Last Updated:** 2026-09-01 (Chunks 0–6 ALL SHIPPED — v1 complete: scaffold, foundations, boards + bet types, rounds & betting, deciding & scoring, leaderboard & profile, polish. V2 roadmap next.)

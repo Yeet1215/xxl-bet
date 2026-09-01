@@ -149,4 +149,4 @@ bug-driven rules to this list as they're earned.
 ---
 
 **Version:** 2026-Q3
-**Last Updated:** 2026-09-01 (Chunk 5 complete: leaderboard (replaces board Players section — one ranked list) + `/profile` (overall strip, per-board stats + streaks via pure unit-tested `lib/stats.ts`, recent-bets history). Suite: 14 tests. No migration. — Chunk 4: deciding & scoring, `lib/scoring.ts` + vitest. — Chunk 3: rounds & betting. — Chunk 2: bet types + boards, migrations `0001`/`0002`. — Chunk 1: migration `0000`, auth, tz, primitives. — Chunk 0: scaffold.)
+**Last Updated:** 2026-09-01 (**v1 complete — chunks 0–6 shipped in one day.** Chunk 6: exact-hit confetti, branded 404/error pages, icon, header truncation. Chunk 5: leaderboard + profile stats/streaks/history (`lib/stats.ts`, unit-tested). Chunk 4: scoring engine + vitest, decide/request/approve flows. Chunk 3: rounds & betting. Chunk 2: bet types + boards, migrations `0001`/`0002`. Chunk 1: migration `0000`, auth, tz, primitives. Chunk 0: scaffold + docs. Suite: 14 tests.)
