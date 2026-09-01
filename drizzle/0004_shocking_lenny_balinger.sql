@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "notify_on_decide" boolean DEFAULT false NOT NULL;

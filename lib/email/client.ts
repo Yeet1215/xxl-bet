@@ -18,10 +18,11 @@ export async function sendEmail(
   to: string,
   subject: string,
   html: string,
+  options?: { bcc?: string[] },
 ): Promise<EmailResult> {
   if (!isEmailEnabled()) {
     console.warn(
-      `[email dev] To: ${to} | Subject: ${subject}\n` +
+      `[email dev] To: ${to}${options?.bcc?.length ? ` | BCC: ${options.bcc.length}` : ''} | Subject: ${subject}\n` +
         `Set GMAIL_USER + GMAIL_APP_PASSWORD to send real emails.`,
     )
     return { skipped: true }
@@ -42,6 +43,7 @@ export async function sendEmail(
     await transport.sendMail({
       from: `XXL Bet <${process.env.GMAIL_USER}>`,
       to,
+      bcc: options?.bcc,
       subject,
       html,
     })

@@ -24,11 +24,12 @@ export async function updateProfile(
   const parsed = updateProfileSchema.safeParse({
     displayName: formData.get('displayName'),
     email: formData.get('email') ?? '',
+    notifyOnDecide: formData.get('notifyOnDecide'),
   })
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
   }
-  const { displayName, email } = parsed.data
+  const { displayName, email, notifyOnDecide } = parsed.data
 
   if (email !== null) {
     const [taken] = await db
@@ -40,7 +41,10 @@ export async function updateProfile(
   }
 
   try {
-    await db.update(users).set({ displayName, email }).where(eq(users.id, user.id))
+    await db
+      .update(users)
+      .set({ displayName, email, notifyOnDecide })
+      .where(eq(users.id, user.id))
   } catch (err) {
     // Concurrent duplicate email: the lower-unique index wins the race.
     const message = err instanceof Error ? err.message : String(err)

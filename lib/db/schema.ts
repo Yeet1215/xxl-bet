@@ -32,6 +32,8 @@ export const users = pgTable(
     // Required at registration since chunk 7; nullable for the grandfathered
     // pre-email accounts (they can add one later; no email = no password reset).
     email: text('email'),
+    // Opt-in (9d): email me when a round I'm in gets decided. Needs email set.
+    notifyOnDecide: boolean('notify_on_decide').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

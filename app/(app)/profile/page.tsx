@@ -131,7 +131,11 @@ export default async function ProfilePage() {
         </section>
       )}
 
-      <AccountSettings displayName={user.displayName} email={user.email} />
+      <AccountSettings
+        displayName={user.displayName}
+        email={user.email}
+        notifyOnDecide={user.notifyOnDecide}
+      />
 
       {history.length > 0 && (
         <section className="flex flex-col gap-3">

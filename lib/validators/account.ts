@@ -16,6 +16,8 @@ export const updateProfileSchema = z.object({
     .refine((v) => v === null || z.string().email().safeParse(v).success, {
       message: 'Enter a valid email address',
     }),
+  // Checkbox: present ('on') = true, absent = false.
+  notifyOnDecide: z.preprocess((v) => v === 'on', z.boolean()),
 })
 
 export const changePasswordSchema = z.object({

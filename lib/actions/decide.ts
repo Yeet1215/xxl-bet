@@ -12,6 +12,7 @@ import { parseBetValue } from '@/lib/validators/bets'
 import { decideRoundSchema, requestIdSchema } from '@/lib/validators/decide'
 import { nowMinutesInTz, todayInTz } from '@/lib/utils/tz'
 import { scoreRound } from '@/lib/scoring'
+import { sendRoundDecidedEmails } from '@/lib/email/notify'
 
 export type DecideActionState = { error: string } | { ok: true } | undefined
 
@@ -108,6 +109,9 @@ export async function decideRound(
   await db.transaction((tx) =>
     applyOutcomeCore(tx, board, round.id, parsedValue.value, user.id, false),
   )
+
+  // Best-effort, after commit; awaited (serverless drops detached promises).
+  await sendRoundDecidedEmails(board, roundDate, user.id)
 
   revalidatePath(`/board/${boardId}`)
   return { ok: true }
@@ -231,6 +235,7 @@ async function reviewDecideRequest(
       return true
     })
     if (!applied) return { error: 'This round was already decided' }
+    await sendRoundDecidedEmails(row.board, row.round.roundDate, user.id)
   } else {
     await db
       .update(decideRequests)

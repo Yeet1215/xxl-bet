@@ -29,9 +29,11 @@ function Chevron() {
 export function AccountSettings({
   displayName,
   email,
+  notifyOnDecide,
 }: {
   displayName: string
   email: string | null
+  notifyOnDecide: boolean
 }) {
   const { showToast } = useToast()
 
@@ -95,6 +97,23 @@ export function AccountSettings({
           <p className="text-xs text-text-muted -mt-2">
             No email = no password reset. Your call.
           </p>
+          {/* Native checkbox (iOS gotcha: never a styled button-switch). */}
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              name="notifyOnDecide"
+              defaultChecked={notifyOnDecide}
+              className="mt-0.5 w-4 h-4 shrink-0 accent-accent"
+            />
+            <span className="text-sm">
+              <span className="font-semibold text-text-primary">
+                Email me when a round is decided
+              </span>
+              <span className="block text-xs text-text-muted">
+                Outcome + winners, one mail per round. Needs an email above.
+              </span>
+            </span>
+          </label>
           <Button type="submit" disabled={profilePending}>
             {profilePending ? 'Saving…' : 'Save profile'}
           </Button>
